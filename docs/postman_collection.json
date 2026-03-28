@@ -1,0 +1,247 @@
+{
+  "info": {
+    "name": "SurveyLabs API",
+    "description": "API collection for SurveyLabs platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "if (response.success && response.data && response.data.token) {",
+                  "    pm.environment.set(\"token\", response.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"admin\",\n    \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Authenticates user and returns JWT token."
+          }
+        },
+        {
+          "name": "Get Me",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "me"]
+            },
+            "description": "Returns details of the currently authenticated user."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Surveys (Admin)",
+      "item": [
+        {
+          "name": "List Surveys",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/surveys",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "surveys"]
+            },
+            "description": "Gets all surveys created by the authenticated user."
+          }
+        },
+        {
+          "name": "Create Survey",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "if (response.success && response.data && response.data.id) {",
+                  "    pm.environment.set(\"survey_id\", response.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"Customer Satisfaction\",\n    \"description\": \"Help us improve our service.\",\n    \"mode\": \"standard\",\n    \"questions\": [\n        {\n            \"text\": \"How would you rate our service?\",\n            \"type\": \"rating\",\n            \"required\": true,\n            \"order_index\": 0\n        },\n        {\n            \"text\": \"Any additional comments?\",\n            \"type\": \"text_long\",\n            \"required\": false,\n            \"order_index\": 1\n        }\n    ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/surveys",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "surveys"]
+            },
+            "description": "Creates a new survey with questions."
+          }
+        },
+        {
+          "name": "Get Survey",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/surveys/{{survey_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "surveys", "{{survey_id}}"]
+            },
+            "description": "Gets a specific survey by ID including its questions."
+          }
+        },
+        {
+          "name": "Update Survey",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"Updated Customer Satisfaction\",\n    \"description\": \"Help us improve.\",\n    \"mode\": \"conversational\",\n    \"questions\": [\n        {\n            \"text\": \"How would you rate our service?\",\n            \"type\": \"rating\",\n            \"required\": true,\n            \"order_index\": 0\n        }\n    ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/surveys/{{survey_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "surveys", "{{survey_id}}"]
+            },
+            "description": "Updates a survey and its questions."
+          }
+        },
+        {
+          "name": "Delete Survey",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/surveys/{{survey_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "surveys", "{{survey_id}}"]
+            },
+            "description": "Deletes a survey."
+          }
+        },
+        {
+          "name": "Get Survey Results",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/surveys/{{survey_id}}/results",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "surveys", "{{survey_id}}", "results"]
+            },
+            "description": "Gets aggregated results and statistics for a survey."
+          }
+        },
+        {
+          "name": "Get Survey Pulse",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/surveys/{{survey_id}}/pulse",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "surveys", "{{survey_id}}", "pulse"]
+            },
+            "description": "Gets live pulse/velocity stats for a survey."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Responses (Public)",
+      "item": [
+        {
+          "name": "Get Public Survey",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/public/surveys/{{survey_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "public", "surveys", "{{survey_id}}"]
+            },
+            "description": "Fetches active survey details and questions for respondent to fill."
+          }
+        },
+        {
+          "name": "Submit Response",
+          "request": {
+            "method": "POST",
+            "header": [
+               { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"completion_time_ms\": 15000,\n    \"answers\": [\n        {\n            \"question_id\": \"<question_uuid_here>\",\n            \"answer_value\": \"4\"\n        }\n    ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/public/surveys/{{survey_id}}/respond",
+              "host": ["{{base_url}}"],
+              "path": ["api", "public", "surveys", "{{survey_id}}", "respond"]
+            },
+            "description": "Submits answers and quality metrics for a survey."
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "survey_id",
+      "value": ""
+    }
+  ]
+}

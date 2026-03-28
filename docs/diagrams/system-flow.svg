@@ -1,0 +1,107 @@
+<svg width="1000" height="600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600">
+  <defs>
+    <!-- Background grid -->
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#E8E8E8" stroke-width="0.5"/>
+    </pattern>
+    <!-- Arrowhead -->
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#3D3FE8" />
+    </marker>
+    <!-- JWT Arrowhead -->
+    <marker id="arrow-jwt" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#A05C00" />
+    </marker>
+    
+    <filter id="shadow" x="-5%" y="-5%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000" flood-opacity="0.1"/>
+    </filter>
+  </defs>
+
+  <rect width="1000" height="600" fill="url(#grid)" />
+
+  <text x="500" y="40" font-family="'DM Sans', sans-serif" font-size="24" font-weight="bold" fill="#1A1916" text-anchor="middle">SurveyLabs System Flow Architecture</text>
+
+  <!-- Client Layer -->
+  <g transform="translate(50, 80)">
+    <rect width="300" height="460" rx="10" fill="#FAFAF8" stroke="#E8E7E3" stroke-width="2" />
+    <text x="150" y="30" font-family="'DM Sans', sans-serif" font-size="18" font-weight="bold" fill="#6B6A66" text-anchor="middle">1. Client Layer</text>
+    
+    <!-- Browser -->
+    <rect x="25" y="60" width="250" height="80" rx="6" fill="#FFFFFF" stroke="#D0CFC9" stroke-width="1.5" filter="url(#shadow)" />
+    <text x="150" y="90" font-family="'DM Sans', sans-serif" font-size="16" font-weight="600" fill="#1A1916" text-anchor="middle">Browser / User</text>
+    <text x="150" y="115" font-family="'DM Sans', sans-serif" font-size="12" fill="#6B6A66" text-anchor="middle">Interacts with UI</text>
+
+    <!-- React SPA -->
+    <rect x="25" y="180" width="250" height="230" rx="6" fill="#EEEEFF" stroke="#3D3FE8" stroke-width="1.5" filter="url(#shadow)" />
+    <text x="150" y="210" font-family="'DM Sans', sans-serif" font-size="16" font-weight="600" fill="#3D3FE8" text-anchor="middle">React SPA</text>
+    
+    <rect x="40" y="230" width="220" height="40" rx="4" fill="#FFFFFF" stroke="#3D3FE8" stroke-width="1" />
+    <text x="150" y="255" font-family="'DM Sans', sans-serif" font-size="13" fill="#1A1916" text-anchor="middle">UI Components &amp; Pages</text>
+
+    <rect x="40" y="285" width="220" height="40" rx="4" fill="#FFFFFF" stroke="#3D3FE8" stroke-width="1" />
+    <text x="150" y="310" font-family="'DM Sans', sans-serif" font-size="13" fill="#1A1916" text-anchor="middle">State (Context + Hooks)</text>
+
+    <rect x="40" y="340" width="220" height="40" rx="4" fill="#FFFFFF" stroke="#3D3FE8" stroke-width="1" />
+    <text x="150" y="365" font-family="'DM Sans', sans-serif" font-size="13" fill="#1A1916" text-anchor="middle">API Client (Axios + Vite)</text>
+  </g>
+
+  <!-- Server Layer -->
+  <g transform="translate(450, 80)">
+    <rect width="350" height="460" rx="10" fill="#FAFAF8" stroke="#E8E7E3" stroke-width="2" />
+    <text x="175" y="30" font-family="'DM Sans', sans-serif" font-size="18" font-weight="bold" fill="#6B6A66" text-anchor="middle">2. Backend Layer (Node/Express)</text>
+
+    <!-- Middleware -->
+    <rect x="25" y="60" width="300" height="60" rx="6" fill="#FFF4E5" stroke="#A05C00" stroke-width="1.5" filter="url(#shadow)" />
+    <text x="175" y="85" font-family="'DM Sans', sans-serif" font-size="14" font-weight="600" fill="#A05C00" text-anchor="middle">Auth Middleware (JWT)</text>
+    <text x="175" y="105" font-family="'DM Sans', sans-serif" font-size="12" fill="#A05C00" text-anchor="middle">Validates token, sets req.user</text>
+
+    <!-- Routes -->
+    <rect x="25" y="140" width="300" height="40" rx="6" fill="#FFFFFF" stroke="#D0CFC9" stroke-width="1.5" filter="url(#shadow)" />
+    <text x="175" y="165" font-family="'DM Sans', sans-serif" font-size="14" font-weight="600" fill="#1A1916" text-anchor="middle">Route Layer</text>
+
+    <!-- Controllers -->
+    <rect x="25" y="200" width="300" height="40" rx="6" fill="#FFFFFF" stroke="#D0CFC9" stroke-width="1.5" filter="url(#shadow)" />
+    <text x="175" y="225" font-family="'DM Sans', sans-serif" font-size="14" font-weight="600" fill="#1A1916" text-anchor="middle">Controller Layer</text>
+
+    <!-- Services -->
+    <rect x="25" y="260" width="300" height="60" rx="6" fill="#E6F4EA" stroke="#1A7A4A" stroke-width="1.5" filter="url(#shadow)" />
+    <text x="175" y="285" font-family="'DM Sans', sans-serif" font-size="14" font-weight="600" fill="#1A7A4A" text-anchor="middle">Service Layer</text>
+    <text x="175" y="305" font-family="'DM Sans', sans-serif" font-size="12" fill="#1A7A4A" text-anchor="middle">Business logic, quality scoring</text>
+
+    <!-- Repositories -->
+    <rect x="25" y="340" width="300" height="40" rx="6" fill="#FFFFFF" stroke="#D0CFC9" stroke-width="1.5" filter="url(#shadow)" />
+    <text x="175" y="365" font-family="'DM Sans', sans-serif" font-size="14" font-weight="600" fill="#1A1916" text-anchor="middle">Repository Layer</text>
+  </g>
+
+  <!-- Data Layer -->
+  <g transform="translate(850, 80)">
+    <rect width="100" height="460" rx="10" fill="#FAFAF8" stroke="#E8E7E3" stroke-width="2" />
+    <text x="50" y="30" font-family="'DM Sans', sans-serif" font-size="14" font-weight="bold" fill="#6B6A66" text-anchor="middle">3. Data</text>
+    
+    <path d="M 15 200 C 15 190, 85 190, 85 200 L 85 300 C 85 310, 15 310, 15 300 Z" fill="#FFFFFF" stroke="#6B6A66" stroke-width="1.5" filter="url(#shadow)" />
+    <ellipse cx="50" cy="200" rx="35" ry="10" fill="#FFFFFF" stroke="#6B6A66" stroke-width="1.5" />
+    <text x="50" y="255" font-family="'DM Sans', sans-serif" font-size="14" font-weight="600" fill="#1A1916" text-anchor="middle">SQLite</text>
+  </g>
+
+  <!-- Connection Arrows -->
+  <line x1="150" y1="220" x2="150" y2="250" stroke="#3D3FE8" stroke-width="2" marker-end="url(#arrow)" />
+  
+  <!-- HTTP Requests (React to Express) -->
+  <path d="M 350 440 L 400 440 L 400 170 L 440 170" fill="none" stroke="#3D3FE8" stroke-width="2" marker-end="url(#arrow)" />
+  <text x="400" y="150" font-family="'DM Sans', sans-serif" font-size="12" fill="#3D3FE8">HTTP Res/Req</text>
+
+  <!-- JWT Auth check -->
+  <path d="M 400 350 L 440 110" fill="none" stroke="#A05C00" stroke-width="2" stroke-dasharray="4" marker-end="url(#arrow-jwt)" />
+  <text x="320" y="110" font-family="'DM Sans', sans-serif" font-size="12" fill="#A05C00">Bearer Token</text>
+
+  <!-- Backend Internal Flow -->
+  <line x1="600" y1="200" x2="600" y2="230" stroke="#1A1916" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="600" y1="260" x2="600" y2="290" stroke="#1A1916" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="600" y1="360" x2="600" y2="390" stroke="#1A1916" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="600" y1="460" x2="600" y2="490" stroke="#1A1916" stroke-width="2" marker-end="url(#arrow)" />
+
+  <!-- DB Query -->
+  <line x1="750" y1="440" x2="840" y2="250" stroke="#1A1916" stroke-width="2" marker-end="url(#arrow)" />
+
+</svg>

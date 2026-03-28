@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SurveyLabs ER Diagram</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <div class="mermaid">
+erDiagram
+    USERS {
+        text id PK
+        text username
+        text password
+        text created_at
+    }
+    SURVEYS {
+        text id PK
+        text user_id FK
+        text title
+        text description
+        text status
+        text mode
+        text created_at
+    }
+    QUESTIONS {
+        text id PK
+        text survey_id FK
+        text text
+        text type
+        text options
+        integer required
+        integer order_index
+        text logic_rules
+    }
+    RESPONSES {
+        text id PK
+        text survey_id FK
+        text submitted_at
+        integer quality_score
+        text quality_flags
+        text quality_label
+        integer completion_time_ms
+    }
+    ANSWERS {
+        text id PK
+        text response_id FK
+        text question_id FK
+        text answer_value
+    }
+    USERS ||--o{ SURVEYS : "creates"
+    SURVEYS ||--o{ QUESTIONS : "contains"
+    SURVEYS ||--o{ RESPONSES : "receives"
+    RESPONSES ||--o{ ANSWERS : "has"
+    QUESTIONS ||--o{ ANSWERS : "answered by"
+  </div>
+  <script>mermaid.initialize({ startOnLoad: true });</script>
+</body>
+</html>

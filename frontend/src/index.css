@@ -1,0 +1,115 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --bg-base: #FAFAF8;
+  --bg-surface: #FFFFFF;
+  --bg-muted: #F3F2EF;
+  --border: #E8E7E3;
+  --border-strong: #D0CFC9;
+  --text-primary: #1A1916;
+  --text-secondary: #6B6A66;
+  --text-muted: #9B9A96;
+  --brand: #3D3FE8;
+  --brand-light: #EEEEFF;
+  --brand-hover: #2D2FC8;
+  --success: #1A7A4A;
+  --success-bg: #EDFAF3;
+  --warning: #A05C00;
+  --warning-bg: #FFF8EC;
+  --danger: #C0392B;
+  --danger-bg: #FDECEA;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  
+  /* Aliases for backwards compatibility during refactor */
+  --good-bg: var(--success-bg);
+  --warn-bg: var(--warning-bg);
+  --bad-bg: var(--danger-bg);
+  --brand-subtle: var(--brand-light);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-base);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Global Animations defined by requirements */
+@keyframes slideIn {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-slide-in { animation: slideIn 0.2s ease-out forwards; }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in { animation: fadeIn 0.15s ease-out forwards; }
+
+@keyframes slideRight {
+  from { transform: translateX(-12px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.animate-slide-right { animation: slideRight 0.2s ease-out forwards; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.animate-custom-pulse { animation: pulse 2s infinite; }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-custom-spin { animation: spin 0.8s linear infinite; }
+
+
+/* Extra specific animations from old file mapping to new requirements */
+@keyframes slide-down-fade {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-30px); }
+}
+.animate-slide-down-fade { animation: slide-down-fade 0.3s ease-in forwards; }
+
+@keyframes check-draw {
+  0% { stroke-dashoffset: 100; }
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes scale-bounce {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+.animate-shimmer {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(to right, var(--bg-muted) 4%, var(--border) 25%, var(--bg-muted) 36%);
+  background-size: 1000px 100%;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
