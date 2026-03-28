@@ -152,6 +152,18 @@ export default function ConversationalSurveyPage() {
         />
       </div>
 
+      {/* Survey Title Header */}
+      {survey && (
+        <div className="w-full px-6 py-4 md:py-6 flex items-center justify-between bg-transparent shrink-0 max-w-[800px] mx-auto animate-fade-in">
+          <div className="text-sm md:text-base font-bold tracking-tight text-[var(--text-primary)] truncate pr-4 opacity-80">
+            {survey.title}
+          </div>
+          <div className="text-[11px] md:text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] shrink-0">
+            {currentIndex + 1} / {questions.length}
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 overflow-x-hidden relative">
         <div className="w-full max-w-[560px] mx-auto flex flex-col items-stretch">
           
