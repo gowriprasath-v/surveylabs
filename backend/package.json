@@ -8,6 +8,9 @@
     "test": "node tests/responseQualityService.test.js && node tests/insightEngine.test.js",
     "test:unit": "node --experimental-vm-modules tests/*.test.js"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^9.4.3",

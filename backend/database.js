@@ -2,8 +2,8 @@ const Database = require('better-sqlite3');
 const bcrypt = require('bcryptjs');
 const path = require('path');
 
-const dbPath = process.env.DB_PATH || path.join(__dirname, 'survey.db');
-const db = new Database(dbPath);
+const DB_PATH = process.env.DB_PATH || './surveylabs.db';
+const db = new Database(DB_PATH);
 
 // Performance pragmas
 db.pragma('journal_mode = WAL');

@@ -3,7 +3,7 @@ import axios from 'axios';
 const TOKEN_KEY = 'surveylabs_token';
 
 const client = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
   timeout: 15000,
 });
 
