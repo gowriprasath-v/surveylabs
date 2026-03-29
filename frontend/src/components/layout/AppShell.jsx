@@ -1,11 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 
 export default function AppShell({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
+
   return (
-    <div className="flex bg-[var(--bg-base)] text-[var(--text-primary)] min-h-screen">
+    <div className="flex bg-[var(--bg-base)] text-[var(--text-primary)] min-h-[100dvh]">
       <Sidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
 
       <main className="flex-1 min-w-0 flex flex-col h-[100dvh]">
@@ -28,8 +37,8 @@ export default function AppShell({ children }) {
         </div>
 
         {/* Scrollable content area */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-6xl p-4 md:p-8 space-y-6">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden w-full h-full relative">
+          <div className="w-full max-w-full lg:max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-4 sm:gap-6 min-h-full">
             {children}
           </div>
         </div>

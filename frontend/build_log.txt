@@ -1,0 +1,29 @@
+
+> survey-frontend@1.0.0 build
+> vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 2951 modules transformed.
+x Build failed in 15.61s
+error during build:
+src/components/results/InsightCharts.jsx (10:9): "generateQuestionInsights" is not exported by "src/utils/insightEngine.js", imported by "src/components/results/InsightCharts.jsx".
+file: /media/gowriprasath/C0F80DE2F80DD814/Project/survey-platform/frontend/src/components/results/InsightCharts.jsx:10:9
+
+ 8:   ResponsiveContainer
+ 9: } from 'recharts';
+10: import { generateQuestionInsights } from '../../utils/insightEngine';
+             ^
+11: 
+12: const PIE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+    at getRollupError (file:///media/gowriprasath/C0F80DE2F80DD814/Project/survey-platform/frontend/node_modules/rollup/dist/es/shared/parseAst.js:406:41)
+    at error (file:///media/gowriprasath/C0F80DE2F80DD814/Project/survey-platform/frontend/node_modules/rollup/dist/es/shared/parseAst.js:402:42)
+    at Module.error (file:///media/gowriprasath/C0F80DE2F80DD814/Project/survey-platform/frontend/node_modules/rollup/dist/es/shared/node-entry.js:17065:16)
+    at Module.traceVariable (file:///media/gowriprasath/C0F80DE2F80DD814/Project/survey-platform/frontend/node_modules/rollup/dist/es/shared/node-entry.js:17477:29)
+    at ModuleScope.findVariable (file:///media/gowriprasath/C0F80DE2F80DD814/Project/survey-platform/frontend/node_modules/rollup/dist/es/shared/node-entry.js:15090:39)
+    at FunctionScope.findVariable (file:///media/gowriprasath/C0F80DE2F80DD814/Project/survey-platform/frontend/node_modules/rollup/dist/es/shared/node-entry.js:5676:38)
+    at FunctionBodyScope.findVariable (file:///media/gowriprasath/C0F80DE2F80DD814/Project/survey-platform/frontend/node_modules/rollup/dist/es/shared/node-entry.js:5676:38)
+    at ReturnValueScope.findVariable (file:///media/gowriprasath/C0F80DE2F80DD814/Project/survey-platform/frontend/node_modules/rollup/dist/es/shared/node-entry.js:5676:38)
+    at FunctionBodyScope.findVariable (file:///media/gowriprasath/C0F80DE2F80DD814/Project/survey-platform/frontend/node_modules/rollup/dist/es/shared/node-entry.js:5676:38)
+    at Identifier.bind (file:///media/gowriprasath/C0F80DE2F80DD814/Project/survey-platform/frontend/node_modules/rollup/dist/es/shared/node-entry.js:5450:40)

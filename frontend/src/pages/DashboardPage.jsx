@@ -146,12 +146,14 @@ export default function DashboardPage() {
         // BUG 1 CAUSE E: key={s.id} guaranteed — never key={index}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredSurveys.map(s => (
-            <SurveyCard
-              key={s.id}
-              survey={s}
-              onDelete={handleDelete}
-              onCopyLink={handleCopyLink}
-            />
+              <SurveyCard
+                key={s.id}
+                survey={s}
+                responseCount={s.response_count ?? 0}
+                questionCount={s.question_count ?? 0}
+                onDelete={handleDelete}
+                onCopyLink={handleCopyLink}
+              />
           ))}
         </div>
       )}

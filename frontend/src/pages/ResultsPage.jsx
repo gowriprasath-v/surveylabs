@@ -1,60 +1,36 @@
-import { useState, useEffect, useMemo } from 'react';
+// ── MODIFIED START ── (imports updated for all steps)
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getResults, getIndividualResponses } from '../api/surveyApi';
-import { generateInsights } from '../utils/insightEngine';
-import { exportResultsToCSV } from '../utils/exportCsv';
+import { generateInsights, extractKeywords, scoreResponseQuality } from '../utils/insightEngine';
+import { exportResponsesCSV } from '../utils/exportCsv';
+import { useToast } from '../hooks/useToast';
+import { ClipboardList, Download, FileText, BarChart2 } from 'lucide-react';
 import AppShell from '../components/layout/AppShell';
 import InsightsPanel from '../components/results/InsightsPanel';
 import LivePulsePanel from '../components/results/LivePulsePanel';
-import HorizontalBarChart from '../components/charts/HorizontalBarChart';
+import QuestionCard from '../components/results/QuestionCard';
+// ── MODIFIED END ──
+// ── MODIFIED END ──
 
-const FILTER_OPTIONS = ['all', 'good', 'suspect', 'spam'];
+// REMOVED DUPLICATE — replaced by RatingAnalyticsView
+// ── MODIFIED END ──
 
-function RatingChart({ currentStats }) {
-  if (!currentStats) return null;
-  const avg = currentStats.average || 0;
-  return (
-    <div>
-      <div className="flex items-center gap-4 mb-6">
-        <span className="text-[48px] leading-none font-bold text-[var(--brand)]">
-          {avg.toFixed(1)}
-        </span>
-        <div>
-          <div className="flex items-center gap-1 text-[24px]">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <span key={n} style={{ color: n <= Math.round(avg) ? '#FBBF24' : 'var(--border-strong)' }}>★</span>
-            ))}
-          </div>
-          <p className="text-[13px] font-medium text-[var(--text-muted)] mt-1 tracking-wide uppercase">
-            {currentStats.count || 0} Ratings
-          </p>
-        </div>
-      </div>
-      {currentStats.distribution && (
-        <HorizontalBarChart
-          data={Object.fromEntries(
-            ['5', '4', '3', '2', '1'].map((k) => [`${k} ★`, currentStats.distribution[k] || 0])
-          )}
-          highlightTop={false}
-        />
-      )}
+// NEW
+const EmptyResponseState = () => (
+  <div className="flex flex-col items-center justify-center py-24 text-center">
+    <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center mx-auto mb-5">
+      <ClipboardList size={24} className="text-gray-300" />
     </div>
-  );
-}
-
-function TextAnswerCard({ text, qualityLevel }) {
-  const qColors = {
-    good: 'bg-[var(--success)]',
-    suspect: 'bg-[var(--warning)]',
-    spam: 'bg-[var(--danger)]'
-  };
-  return (
-    <div className="rounded-[var(--radius-md)] p-4 text-[14px] flex items-start gap-4 bg-[var(--bg-muted)] text-[var(--text-primary)] border border-[var(--border)] transition-colors hover:bg-[var(--bg-surface)] hover:border-[var(--brand-light)]">
-      <div className={`mt-1.5 shrink-0 w-2.5 h-2.5 rounded-full ${qColors[qualityLevel] || 'bg-[var(--border-strong)]'}`} />
-      <span className="flex-1 leading-relaxed opacity-90">{text}</span>
-    </div>
-  );
-}
+    <h3 className="text-base font-semibold text-gray-700 mb-1">
+      No responses yet
+    </h3>
+    <p className="text-sm text-gray-400 max-w-xs mx-auto leading-relaxed">
+      Share your survey link to start collecting responses.
+      Charts and insights will appear here automatically.
+    </p>
+  </div>
+);
 
 export default function ResultsPage() {
   const { id } = useParams();
@@ -62,8 +38,17 @@ export default function ResultsPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filter, setFilter] = useState('all');
-  const [expandedText, setExpandedText] = useState({});
+  
+  // NEW
+  const [qualityFilter, setQualityFilter] = useState('all');
+  // NEW
+  const [viewMode, setViewMode] = useState('chart');
+
+  // UPDATED
+  const [isExporting, setIsExporting] = useState(false);
+  const exportRef = useRef(null);
+  const toast = useToast();
+  // ── MODIFIED END ──
 
   useEffect(() => {
     let active = true;
@@ -81,8 +66,13 @@ export default function ResultsPage() {
     try {
       if (!silent) setLoading(true);
       if (!silent) setError('');
-      const result = await getResults(id);
-      setData(result);
+      
+      const [result, respData] = await Promise.all([
+        getResults(id),
+        getIndividualResponses(id)
+      ]);
+      
+      setData({ ...result, responses: respData?.responses || [] });
     } catch (err) {
       if (!silent) setError(typeof err === 'string' ? err : 'Failed to load results');
     } finally {
@@ -90,44 +80,101 @@ export default function ResultsPage() {
     }
   };
 
-  // BUG 3 FIX: pass getIndividualResponses as fn — CSV uses per-row response data
-  const handleExport = () => {
-    if (!data) return;
-    exportResultsToCSV(id, data.survey?.title, getIndividualResponses);
+  const { survey } = data || {};
+
+  // NEW
+  const handleExportCSV = () => {
+    exportResponsesCSV(
+      survey?.id,
+      survey?.title,
+      responses,      // ALWAYS use unfiltered responses for CSV export
+      questions
+    );
   };
 
-  const filteredData = useMemo(() => {
-    if (!data) return null;
-    if (filter === 'all' || !data.responses) return data;
+  // UPDATED (Step 9D - Export function)
+  const handleExportPNG = async () => {
+    if (!exportRef.current || isExporting) return;
+    setIsExporting(true);
+    try {
+      // Allow Recharts animations to complete
+      await new Promise(resolve => setTimeout(resolve, 800));
+      const { toPng } = await import('html-to-image');
+      const node = exportRef.current;
+      const dataUrl = await toPng(node, {
+        cacheBust: true,
+        backgroundColor: '#ffffff',
+        pixelRatio: 2,
+        width: node.scrollWidth,
+        height: node.scrollHeight,
+        style: {
+          overflow: 'visible',
+          height: node.scrollHeight + 'px',
+        },
+        filter: n =>
+          !(n.dataset && n.dataset.noExport === 'true'),
+      });
+      const link = document.createElement('a');
+      link.download = `survey-${Date.now()}.png`;
+      link.href = dataUrl;
+      link.click();
+      toast.success('Exported successfully');
+    } catch (err) {
+      console.error('Export failed:', err);
+      toast.error('Export failed — please try again');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+  // ── MODIFIED END ──
 
-    const filteredResponses = data.responses.filter(r => (r.quality_label || 'good') === filter);
-    const newQuestions = data.questions.map(q => {
-      const answersForQ = filteredResponses
-        .map(r => r.answers?.find(a => a.question_id === q.id)?.answer_value)
-        .filter(val => val !== undefined && val !== null && val !== '');
+  const questions = data?.questions || [];
+  const responses = data?.responses || [];
 
-      let newResults;
-      if (q.type === 'mcq') {
-        newResults = {};
-        if (Array.isArray(q.options)) q.options.forEach(o => { newResults[o] = 0; });
-        answersForQ.forEach(v => { newResults[v] = (newResults[v] || 0) + 1; });
-      } else if (q.type === 'rating') {
-        const nums = answersForQ.map(v => parseInt(v)).filter(n => !isNaN(n));
-        const count = nums.length;
-        const sum = nums.reduce((s, n) => s + n, 0);
-        const average = count > 0 ? sum / count : 0;
-        const distribution = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
-        nums.forEach(n => { distribution[String(n)] = (distribution[String(n)] || 0) + 1; });
-        newResults = { average, count, distribution };
-      } else {
-        newResults = answersForQ;
-      }
+  // UPDATED (Step 8)
+  const scoredResponses = useMemo(() =>
+    (responses || []).map(r => ({
+      ...r,
+      quality: r.quality ?? r.quality_label ??
+        scoreResponseQuality(r, questions).quality
+    })),
+    [responses, questions]
+  );
 
-      return { ...q, results: newResults, total_answers: answersForQ.length };
-    });
+  // ── CRITICAL: CSV exports unfiltered responses ──
+  // filteredResponses is for UI display only
+  // Export always uses full responses array
+  const filteredResponses = useMemo(() => {
+    if (qualityFilter === 'all') return scoredResponses;
+    return scoredResponses.filter(r =>
+      (r.quality ?? r.quality_label ?? 'good') === qualityFilter
+    );
+  }, [scoredResponses, qualityFilter]);
 
-    return { ...data, questions: newQuestions, total_responses: filteredResponses.length };
-  }, [data, filter]);
+  // NEW (Step 3D)
+  const qualityCounts = useMemo(() => {
+    const getQuality = r => r.quality ?? r.quality_label ?? 'good';
+    return {
+      all:     scoredResponses.length,
+      good:    scoredResponses.filter(r => getQuality(r) === 'good').length,
+      suspect: scoredResponses.filter(r => getQuality(r) === 'suspect').length,
+      spam:    scoredResponses.filter(r => getQuality(r) === 'spam').length,
+    };
+  }, [scoredResponses]);
+
+  // ── CRITICAL: single source of truth ──
+  // totalResponses must ALWAYS equal responses.length
+  // DO NOT use survey.totalResponses or any backend count field
+  const totalResponses = scoredResponses?.length ?? 0;
+
+
+  // ── CRITICAL: empty state gates ──
+  // All data sections (charts, insights, filters) must check
+  // totalResponses > 0 before rendering
+  const insights = useMemo(() =>
+    generateInsights(data, filteredResponses),
+    [data, filteredResponses]
+  );
 
   if (loading) {
     return (
@@ -149,140 +196,165 @@ export default function ResultsPage() {
     );
   }
 
-  const { survey, total_responses, quality_counts } = data;
-  const displayData = filteredData || data;
-  const qc = quality_counts || { good: 0, suspect: 0, spam: 0 };
-  const insights = generateInsights(data);
-
-  const filterCounts = {
-    all: total_responses,
-    good: qc.good || (total_responses - (qc.suspect || 0) - (qc.spam || 0)),
-    suspect: qc.suspect || 0,
-    spam: qc.spam || 0,
-  };
-
   return (
     <AppShell>
-      {/* Full-width Header */}
-      <div className="flex flex-col sm:flex-row items-center justify-between mb-8 pb-6 border-b border-[var(--border)] gap-6">
-        <div className="flex flex-col gap-2 w-full sm:w-auto text-center sm:text-left">
-          <button 
-            onClick={() => navigate('/dashboard')} 
-            className="text-[13px] font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors inline-block w-fit"
-          >
-            ← Back to Dashboard
-          </button>
-          <h1 className="text-[32px] font-bold text-[var(--text-primary)] tracking-tight leading-none">
-            {survey.title}
-          </h1>
-        </div>
-        <button
-          onClick={handleExport}
-          className="w-full sm:w-auto px-6 py-2.5 rounded-[var(--radius-sm)] text-[14px] font-bold transition-all bg-[var(--bg-surface)] border-2 border-[var(--border)] text-[var(--text-primary)] hover:border-[var(--brand)] shadow-[var(--shadow-sm)]"
-        >
-          Export CSV ⬇
-        </button>
-      </div>
-
-      <div className="space-y-8">
-        <LivePulsePanel surveyId={id} />
-
-        {insights.length > 0 && <InsightsPanel insights={insights} />}
-
-        {/* Quality Filter Tabs */}
-        <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
-          {FILTER_OPTIONS.map((f) => {
-            const count = filterCounts[f];
-            const isActive = filter === f;
-            return (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-6 py-2.5 rounded-full text-[13px] font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-200 ${
-                  isActive 
-                    ? 'bg-[var(--brand)] text-white shadow-[var(--shadow-sm)]' 
-                    : 'bg-[var(--bg-muted)] text-[var(--text-secondary)] hover:bg-[var(--border)]'
-                }`}
-              >
-                {f} <span className="opacity-70 ml-1">({count})</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Question Result Cards */}
-        {displayData.total_responses === 0 ? (
-          <div className="text-center py-24 rounded-[var(--radius-xl)] bg-[var(--bg-surface)] border border-[var(--border)] shadow-[var(--shadow-sm)]">
-            <div className="text-[64px] mb-6">📊</div>
-            <h3 className="text-[20px] font-bold mb-2 text-[var(--text-primary)]">No responses match this filter</h3>
-            <p className="text-[15px] text-[var(--text-muted)]">Adjust your filter to explore the data.</p>
+      {/* ── UPDATED START ── (Step 11A + 9B Layout) */}
+      <div 
+        ref={exportRef}
+        id="survey-results"
+        className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6 bg-white w-full"
+        style={{ overflow: 'visible' }}
+      >
+        {/* ── UPDATED END ── */}
+        
+        {/* ── UPDATED START ── (Header with Consistent Action Buttons) */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-gray-100">
+          {/* LEFT: Survey info */}
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">
+              Survey Results
+            </p>
+            <h1 className="text-2xl font-semibold text-gray-900 leading-tight">
+              {survey?.title || 'Survey Results'}
+            </h1>
+            <p className="text-sm text-gray-500 mt-1.5">
+              {/* SINGLE SOURCE — always from responses.length */}
+              {totalResponses} response{totalResponses !== 1 ? 's' : ''}
+              {survey?.created_at && (
+                <span className="ml-2 text-gray-400">
+                  · Created {new Date(survey.created_at).toLocaleDateString(
+                    'en-US', { month: 'short', day: 'numeric', year: 'numeric' }
+                  )}
+                </span>
+              )}
+            </p>
           </div>
-        ) : (
-          <div className="grid gap-6">
-            {displayData.questions.map((q, idx) => (
-              <div
-                key={q.id}
-                className="rounded-[var(--radius-lg)] overflow-hidden bg-[var(--bg-surface)] border border-[var(--border)] shadow-[var(--shadow-sm)] animate-slide-in relative group transition-colors hover:border-[var(--border-strong)]"
-              >
-                {/* Header */}
-                <div className="px-6 py-5 flex items-start sm:items-center justify-between border-b border-[var(--border)] bg-[#FAFAF8] gap-4">
-                  <div className="flex items-start sm:items-center gap-4">
-                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[var(--brand-light)] text-[var(--brand)] text-[14px] font-bold shrink-0">
-                      {idx + 1}
-                    </span>
-                    <h3 className="text-[16px] font-bold text-[var(--text-primary)] leading-tight pt-1 sm:pt-0">
-                      {q.label}
-                    </h3>
-                  </div>
-                  <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 shrink-0">
-                    <span className="text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-sm bg-[var(--bg-muted)] text-[var(--text-secondary)] border border-[var(--border)]">
-                      {q.type.replace('_', ' ')}
-                    </span>
-                    <span className="text-[13px] font-bold text-[var(--text-secondary)]">
-                      {q.total_answers || 0} response{(q.total_answers || 0) !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                </div>
 
-                {/* Body */}
-                <div className="p-6">
-                  {q.type === 'mcq' && (
-                    <HorizontalBarChart data={q.results} highlightTop={true} />
-                  )}
+          {/* RIGHT: Actions */}
+          <div
+            className="flex items-center gap-2 shrink-0 w-full sm:w-auto mt-2 sm:mt-0"
+            data-no-export="true"
+          >
+            {/* Secondary: Export CSV */}
+            <button
+              onClick={handleExportCSV}
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-gray-700 text-[13px] font-medium border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm min-h-[36px]"
+              title="Export CSV"
+            >
+              <FileText size={14} />
+              <span>CSV</span>
+            </button>
 
-                  {q.type === 'rating' && (
-                    <RatingChart currentStats={q.results} />
-                  )}
+            {/* Primary: Export PNG */}
+            <button
+              onClick={handleExportPNG}
+              disabled={isExporting}
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[13px] font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm min-h-[36px]"
+              title="Export PNG"
+            >
+              {isExporting ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
+                  <span>Loading</span>
+                </>
+              ) : (
+                <>
+                  <Download size={14} shrink-0="true" />
+                  <span>PNG</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+        {/* ── UPDATED END ── */}
 
-                  {(q.type === 'text_short' || q.type === 'text_long' || q.type === 'text') && (
-                    <>
-                      {(!q.results || q.results.length === 0) ? (
-                        <p className="text-[14px] text-[var(--text-muted)] italic py-4 text-center">No responses recorded.</p>
-                      ) : (
-                        <div className="space-y-3">
-                          {(expandedText[q.id] ? q.results : q.results.slice(0, 10)).map((text, i) => {
-                             const qLevel = filter === 'all' ? 'good' : filter;
-                             return <TextAnswerCard key={i} text={text} qualityLevel={qLevel} />
-                          })}
-                          {q.results.length > 10 && !expandedText[q.id] && (
-                            <div className="pt-4 text-center">
-                              <button
-                                onClick={() => setExpandedText((prev) => ({ ...prev, [q.id]: true }))}
-                                className="text-[13px] font-bold text-[var(--brand)] hover:text-[var(--brand-hover)] uppercase tracking-wider px-6 py-2 rounded-full bg-[var(--brand-light)] transition-colors"
-                              >
-                                View All {q.results.length} Responses
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
+        {/* ── UPDATED START ── (Controls Row Step 11C / Quality Filter Step 3 / Toggle Step 4) */}
+        {totalResponses > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {/* Quality filter */}
+            <div className="inline-flex flex-wrap items-center gap-0.5 bg-gray-50 border border-gray-100 rounded-lg p-0.5 w-full sm:w-auto" data-no-export="true">
+              {[
+                { value: 'all',     label: 'All'     },
+                { value: 'good',    label: 'Good'    },
+                { value: 'suspect', label: 'Suspect' },
+                { value: 'spam',    label: 'Spam'    },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setQualityFilter(opt.value)}
+                  className={`
+                    flex-1 sm:flex-none px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors
+                    flex items-center justify-center
+                    ${qualityFilter === opt.value
+                      ? 'bg-white text-indigo-700 shadow-sm border border-gray-200/50'
+                      : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100/50'
+                    }
+                  `}
+                >
+                  {opt.label}
+                  <span className={`
+                    ml-1.5 text-[10px] sm:text-[11px] px-1.5 py-0.5 rounded font-semibold
+                    ${qualityFilter === opt.value
+                      ? 'bg-indigo-50 text-indigo-600'
+                      : 'bg-gray-100 text-gray-500'
+                    }
+                  `}>
+                    {qualityCounts[opt.value]}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* View toggle */}
+            <div className="flex w-full sm:w-auto items-center gap-0.5 bg-gray-50 border border-gray-100 rounded-lg p-0.5" data-no-export="true">
+              {['chart', 'raw'].map(mode => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  className={`flex-1 sm:flex-none justify-center
+                    px-3 py-1.5 rounded-md text-[13px] font-medium capitalize
+                    transition-colors
+                    ${viewMode === mode
+                      ? 'bg-white text-gray-900 shadow-sm border border-gray-200/50'
+                      : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100/50'
+                    }
+                  `}
+                >
+                  {mode === 'chart' ? 'Charts' : 'Raw Data'}
+                </button>
+              ))}
+            </div>
           </div>
         )}
+        {/* ── UPDATED END ── */}
+
+        {/* ── CONDITIONAL DATA SECTIONS (Step 2B) ── */}
+        {totalResponses > 0 && (
+          <div className="space-y-8">
+            <LivePulsePanel surveyId={id} />
+            
+            <InsightsPanel insights={insights} />
+
+            <div className="space-y-4">
+              {questions.map((question, index) => (
+                <QuestionCard
+                  key={question.id}
+                  question={question}
+                  index={index}
+                  viewMode={viewMode}
+                  filteredResponses={filteredResponses}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {totalResponses === 0 && (
+          <EmptyResponseState />
+        )}
+        {/* ── END CONDITIONAL SECTIONS ── */}
+        {/* ── UPDATED END ── */}
+
       </div>
     </AppShell>
   );

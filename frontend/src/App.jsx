@@ -10,6 +10,8 @@ const EditSurveyPage           = lazy(() => import('./pages/EditSurveyPage'));
 const ResultsPage              = lazy(() => import('./pages/ResultsPage'));
 const PublicSurveyPage         = lazy(() => import('./pages/PublicSurveyPage'));
 const ConversationalSurveyPage = lazy(() => import('./pages/ConversationalSurveyPage'));
+const AnalyticsPage            = lazy(() => import('./pages/AnalyticsPage'));
+const SettingsPage             = lazy(() => import('./pages/SettingsPage'));
 
 const FullPageSpinner = () => (
   <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
@@ -48,6 +50,10 @@ export default function App() {
 
         {/* Root → smart redirect */}
         <Route path="/" element={<RootRedirect />} />
+
+        {/* NEW: placeholder routes replaced by Analytics/Settings pages */}
+        <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
+        <Route path="/settings"  element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
 
         {/* Catch-all */}
         <Route path="*" element={<RootRedirect />} />

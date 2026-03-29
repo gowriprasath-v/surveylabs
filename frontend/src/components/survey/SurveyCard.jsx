@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { BarChart2, FileText, AlertCircle, Share2, Edit2, Play, Trash2 } from 'lucide-react';
 
-export default function SurveyCard({ survey, onDelete, onCopyLink }) {
+export default function SurveyCard({ survey, responseCount = 0, questionCount = 0, onDelete, onCopyLink }) {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
 
@@ -23,7 +24,6 @@ export default function SurveyCard({ survey, onDelete, onCopyLink }) {
 
   const qc = survey.quality_counts || {};
   const suspectCount = (qc.suspect || 0) + (qc.spam || 0);
-  const totalResp = survey.response_count || 0;
   const showQualityWarning = suspectCount > 0;
 
   const truncateDesc = (text) => {
@@ -38,11 +38,11 @@ export default function SurveyCard({ survey, onDelete, onCopyLink }) {
   return (
     <div
       onClick={onCardClick}
-      className="rounded-xl p-5 transition-all duration-200 cursor-pointer bg-[var(--bg-surface)] border border-[var(--border)] shadow-[var(--shadow-sm)] hover:border-[var(--brand)] hover:shadow-[var(--shadow-md)] flex flex-col h-full"
+      className="rounded-xl p-5 transition-all duration-300 cursor-pointer bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-indigo-300 flex flex-col h-full group"
     >
       {/* Header */}
-      <div className="flex items-start justify-between mb-3">
-        <h3 className="text-base font-bold truncate pr-3 text-[var(--text-primary)] leading-tight">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4 gap-2 sm:gap-0">
+        <h3 className="text-lg font-semibold truncate pr-3 text-gray-900 leading-tight group-hover:text-indigo-700 transition-colors">
           {survey.title}
         </h3>
         <div className="flex items-center gap-2 shrink-0">
@@ -67,58 +67,61 @@ export default function SurveyCard({ survey, onDelete, onCopyLink }) {
         </div>
       </div>
 
-      {/* Description */}
-      <p className="text-sm mb-4 text-[var(--text-secondary)] min-h-[40px] leading-relaxed">
-        {truncateDesc(survey.description)}
-      </p>
-
-      {/* Stats */}
-      <div className="flex items-center gap-x-3 gap-y-2 text-xs mb-4 flex-wrap text-[var(--text-muted)] font-medium">
-        <span className="flex items-center gap-1">
-          <span className="text-base">📊</span> {totalResp} response{totalResp !== 1 ? 's' : ''}
-        </span>
-        <span className="text-[var(--border-strong)]">•</span>
-        <span className="flex items-center gap-1">
-          <span className="text-base">📝</span> {survey.question_count || 0} question{(survey.question_count || 0) !== 1 ? 's' : ''}
-        </span>
-        <span className="text-[var(--border-strong)]">•</span>
-        <span>{formatDate(survey.created_at)}</span>
-      </div>
-
-      {/* Quality warning */}
-      <div className="min-h-[24px] mb-4">
+      {/* Main Metric */}
+      <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-1.5 text-indigo-700 bg-indigo-50/80 px-2.5 py-1 rounded-md border border-indigo-100/50">
+          <BarChart2 size={16} className="stroke-[2.5px]" />
+          <span className="text-base font-bold leading-none">{responseCount}</span>
+          <span className="text-xs font-semibold uppercase tracking-wider leading-none mt-0.5 opacity-80">Replies</span>
+        </div>
+        
         {showQualityWarning && (
-          <span className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold bg-[var(--bad-bg)] text-[var(--danger)] border border-[var(--danger)] border-opacity-20">
-            <span className="text-sm">⚠</span> {suspectCount} suspect response{suspectCount !== 1 ? 's' : ''}
-          </span>
+          <div className="flex items-center gap-1.5 text-red-700 bg-red-50 px-2 py-1 rounded-md border border-red-100">
+            <AlertCircle size={14} className="stroke-[2px]" />
+            <span className="text-xs font-bold leading-none">{suspectCount} flagged</span>
+          </div>
         )}
       </div>
 
-      <div className="mt-auto pt-4 border-t border-[var(--border)] flex items-center gap-2">
+      {/* Description */}
+      <p className="text-sm mb-4 text-gray-500 leading-relaxed min-h-[40px] line-clamp-2">
+        {truncateDesc(survey.description)}
+      </p>
+
+      {/* Metadata */}
+      <div className="flex items-center gap-x-2 text-[11px] mb-6 text-gray-400 font-medium">
+        <span className="flex items-center gap-1.5 uppercase tracking-wider">
+          <FileText size={12} /> {questionCount} Qs
+        </span>
+        <span className="text-gray-300">•</span>
+        <span className="uppercase tracking-wider">{formatDate(survey.created_at)}</span>
+      </div>
+
+      <div className="mt-auto pt-4 border-t border-gray-100 flex flex-wrap items-center gap-2.5 w-full">
         <button
           onClick={(e) => { e.stopPropagation(); navigate(`/surveys/${survey.id}/results`); }}
-          className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors bg-[var(--brand-light)] text-[var(--brand)] hover:bg-[var(--brand)] hover:text-white"
+          className="flex flex-1 sm:flex-none justify-center items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm min-w-[100px]"
         >
-          Results
+          <Play size={14} fill="currentColor" /> Results
         </button>
         <button
           onClick={handleCopy}
-          className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors bg-[var(--bg-muted)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="flex sm:flex-1 md:flex-none justify-center items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors border border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm"
         >
-          {copied ? 'Copied!' : 'Share ↗'}
+          <Share2 size={14} /> <span className="hidden sm:inline-block">{copied ? 'Copied' : 'Share'}</span>
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); navigate(`/surveys/${survey.id}/edit`); }}
-          className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors bg-[var(--bg-muted)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="flex sm:flex-1 md:flex-none justify-center items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors border border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm"
         >
-          Edit
+          <Edit2 size={14} /> <span className="hidden sm:inline-block">Edit</span>
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(survey.id); }}
-          className="ml-auto p-1.5 rounded-lg text-sm transition-colors text-[var(--text-muted)] hover:bg-[var(--bad-bg)] hover:text-[var(--danger)]"
+          className="ml-auto flex justify-center items-center p-2 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
           title="Delete Survey"
         >
-          🗑️
+          <Trash2 size={16} />
         </button>
       </div>
     </div>

@@ -92,6 +92,21 @@ function submitResponse(surveyId, answersPayload, ip, completionTimeMs) {
     if (answerRows.length > 0) {
       answerRepository.createMany(answerRows);
     }
+
+    // ADDED — keep stored count in sync
+    // NOTE: frontend NEVER reads this stored value for display.
+    // This sync is for data integrity only.
+    try {
+      db.prepare(`
+        UPDATE surveys
+        SET total_responses = (
+          SELECT COUNT(*) FROM responses WHERE survey_id = ?
+        )
+        WHERE id = ?`
+      ).run(surveyId, surveyId);
+    } catch (err) {
+      // Ignored if total_responses column does not exist
+    }
   });
 
   runAll();
