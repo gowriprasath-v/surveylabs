@@ -1,10 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AppShell from '../components/layout/AppShell';
 import { useAuth } from '../context/AuthContext';
-import { User, Download, LayoutTemplate } from 'lucide-react';
+import { User, Download, LayoutTemplate, Loader2 } from 'lucide-react';
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const [isSaving, setIsSaving] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+
+  const handleSave = () => {
+    setIsSaving(true);
+    setTimeout(() => {
+      setIsSaving(false);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    }, 500);
+  };
 
   return (
     <AppShell>
@@ -113,14 +124,26 @@ export default function SettingsPage() {
           </section>
 
           {/* ACTIONS */}
-          <div className="pt-2 flex justify-end">
-            <button className="px-6 py-2.5 bg-indigo-600 text-white font-medium rounded-xl text-[14px] hover:bg-indigo-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+          <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t border-gray-100 flex justify-end mt-6">
+            <button 
+              onClick={handleSave}
+              disabled={isSaving}
+              className="px-6 py-2.5 bg-indigo-600 text-white font-medium rounded-xl text-[14px] hover:bg-indigo-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-80 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isSaving && <Loader2 size={16} className="animate-spin" />}
               Save Changes
             </button>
           </div>
 
         </div>
       </div>
+      
+      {/* Toast Notification */}
+      {showToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-5 py-3 rounded-xl shadow-lg text-[14px] font-medium flex items-center gap-3 z-50 transition-all">
+          Save functionality coming soon
+        </div>
+      )}
     </AppShell>
   );
 }

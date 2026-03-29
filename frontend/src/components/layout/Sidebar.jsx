@@ -71,13 +71,13 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
         </button>
 
         {/* Logo */}
-        <div className="px-5 py-5 border-b border-white/30">
-          <div className="flex items-center gap-2.5 overflow-hidden">
-            <div className="w-7 h-7 rounded-lg bg-[var(--brand)] flex items-center justify-center shrink-0">
-              <span className="text-white text-xs font-bold">S</span>
+        <div className={`flex items-center pt-4 mb-4 ${collapsed ? 'px-3 justify-center' : 'px-5'}`}>
+          <div className="flex items-center gap-3 overflow-hidden m-0 p-0">
+            <div className="w-[40px] h-[40px] rounded-[12px] bg-indigo-600 flex items-center justify-center shrink-0">
+              <span className="text-white font-bold text-[15px]">S</span>
             </div>
             {!collapsed && (
-              <span className="text-[var(--text-primary)] font-semibold text-sm tracking-tight whitespace-nowrap">
+              <span className="text-[var(--text-primary)] font-semibold tracking-tight whitespace-nowrap text-[15px]">
                 SurveyLab
               </span>
             )}
@@ -97,6 +97,13 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
                 {section.items.map((item) => {
                   const isActive = location.pathname === item.path
                     || location.pathname.startsWith(item.path + '/');
+                    
+                  const baseClasses = "relative flex items-center text-[13px] font-medium transition-all duration-150 ease-in-out group min-h-[44px]";
+                  const expandedClasses = isActive
+                    ? "bg-indigo-600 text-white shadow-[0_4px_12px_rgba(79,70,229,0.3)] rounded-xl px-3 py-3 gap-3"
+                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-xl px-3 py-3 gap-3";
+                  const collapsedClasses = "justify-center rounded-xl hover:bg-[rgba(0,0,0,0.05)]";
+
                   return (
                     <li key={item.path}>
                       <NavLink
@@ -104,18 +111,18 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
                         end
                         onClick={() => setMobileOpen(false)}
                         title={collapsed ? item.label : undefined}
-                        className={`
-                          flex items-center gap-3 px-3 py-3 rounded-xl text-[13px]
-                          font-medium transition-all duration-300 group min-h-[44px]
-                          ${isActive
-                            ? 'bg-indigo-600 text-white shadow-[0_4px_12px_rgba(79,70,229,0.3)]'
-                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                          }
-                        `}
+                        className={`${baseClasses} ${collapsed ? collapsedClasses : expandedClasses}`}
                       >
+                        {collapsed && isActive && (
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[20px] bg-indigo-600 rounded-[2px]" />
+                        )}
                         <item.icon
                           size={16}
-                          className={`shrink-0 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-600'}`}
+                          className={`shrink-0 transition-colors duration-150 ${
+                            collapsed
+                              ? (isActive ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-600')
+                              : (isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-600')
+                          }`}
                         />
                         {!collapsed && item.label}
                       </NavLink>
