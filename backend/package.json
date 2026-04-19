@@ -11,7 +11,7 @@
     "test:e2e": "node scripts/e2e.js"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "20.x"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
