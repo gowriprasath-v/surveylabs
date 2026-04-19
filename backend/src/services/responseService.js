@@ -12,6 +12,44 @@ function createError(message, statusCode = 400) {
   return err;
 }
 
+function evaluateRules(allQuestions, currentAnswers) {
+  const hidden = new Set();
+  for (const q of allQuestions) {
+    let rules = q.logic_rules;
+    if (typeof rules === 'string') {
+      try { rules = JSON.parse(rules); } catch (e) { rules = null; }
+    }
+    if (!rules || !Array.isArray(rules) || rules.length === 0) continue;
+
+    const myAnswer = currentAnswers[q.id];
+    if (myAnswer === undefined || myAnswer === '') continue;
+
+    for (const rule of rules) {
+      let match = false;
+      if (rule.if_answer_equals && String(myAnswer) === String(rule.if_answer_equals)) match = true;
+      if (rule.if_answer_contains && String(myAnswer).toLowerCase().includes(String(rule.if_answer_contains).toLowerCase())) match = true;
+      if (rule.if_answer_greater_than && !isNaN(myAnswer) && Number(myAnswer) > Number(rule.if_answer_greater_than)) match = true;
+      if (rule.if_answer_less_than && !isNaN(myAnswer) && Number(myAnswer) < Number(rule.if_answer_less_than)) match = true;
+      if (rule.if_answer_is_empty && (!myAnswer || String(myAnswer).trim() === '')) match = true;
+
+      if (match) {
+        if (rule.then_skip_to_question_id) {
+          const targetIdx = allQuestions.findIndex((qq) => qq.id === rule.then_skip_to_question_id);
+          const currentIdx = allQuestions.findIndex((qq) => qq.id === q.id);
+          if (targetIdx > currentIdx) {
+            for (let i = currentIdx + 1; i < targetIdx; i++) hidden.add(allQuestions[i].id);
+          }
+        }
+        if (rule.then_end_survey) {
+          const currentIdx = allQuestions.findIndex((qq) => qq.id === q.id);
+          for (let i = currentIdx + 1; i < allQuestions.length; i++) hidden.add(allQuestions[i].id);
+        }
+      }
+    }
+  }
+  return hidden;
+}
+
 /**
  * Submit a survey response inside a single DB transaction.
  * Accepts completionTimeMs from either camelCase or snake_case key.
@@ -55,10 +93,23 @@ function submitResponse(surveyId, answersPayload, ip, completionTimeMs) {
       throw createError(`Invalid option "${val}" for question "${q.label}"`);
     }
 
-    if (q.type === 'rating') {
+      if (q.type === 'rating') {
       const n = Number(val);
       if (isNaN(n) || n < 1 || n > 5) {
         throw createError(`Rating for "${q.label}" must be between 1 and 5`);
+      }
+    }
+  }
+
+  // Validate required questions (considering logic rules)
+  const hidden = evaluateRules(questions, answersMap);
+  const visibleQuestions = questions.filter(q => !hidden.has(q.id));
+  
+  for (const q of visibleQuestions) {
+    if (q.required) {
+      const val = answersMap[q.id];
+      if (val === undefined || val === null || String(val).trim() === '') {
+        throw createError(`Question "${q.label}" is required`);
       }
     }
   }
@@ -69,8 +120,9 @@ function submitResponse(surveyId, answersPayload, ip, completionTimeMs) {
   const responseId = uuidv4();
 
   // Wrap response + answers in a single transaction
+  let createdResponse = null;
   const runAll = db.transaction(() => {
-    responseRepository.create({
+    createdResponse = responseRepository.create({
       id:              responseId,
       surveyId,
       respondentIp:    ip || 'unknown',
@@ -111,7 +163,10 @@ function submitResponse(surveyId, answersPayload, ip, completionTimeMs) {
 
   runAll();
 
-  return { response_id: responseId, quality: qualityResult };
+  return {
+    ...(createdResponse || { id: responseId, survey_id: surveyId }),
+    quality: qualityResult,
+  };
 }
 
 /**

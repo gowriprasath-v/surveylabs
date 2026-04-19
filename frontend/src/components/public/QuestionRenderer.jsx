@@ -15,7 +15,7 @@ export default function QuestionRenderer({ question, value, onChange, error }) {
       {question.type === 'mcq' && question.options && (
         <div className="space-y-2">
           {question.options.map((opt) => {
-            const selected = value === opt;
+            const selected = value === opt && value !== '';
             return (
               <label key={opt} className="flex items-center gap-3 cursor-pointer px-4 py-2.5 rounded-lg transition-all"
                 style={{

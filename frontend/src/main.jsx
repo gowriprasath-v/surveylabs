@@ -1,19 +1,25 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { ToastProvider } from './hooks/useToast';
-import App from './App';
+import App from './App.jsx';
 import './index.css';
+import { AuthProvider } from './context/AuthContext.jsx';
+import { StoreProvider } from './context/StoreContext.jsx';
+import { ToastProvider } from './context/ToastContext.jsx';
+import GlobalErrorBoundary from './components/layout/GlobalErrorBoundary.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
+    <GlobalErrorBoundary>
+      <BrowserRouter>
         <ToastProvider>
-          <App />
+          <AuthProvider>
+            <StoreProvider>
+              <App />
+            </StoreProvider>
+          </AuthProvider>
         </ToastProvider>
-      </AuthProvider>
-    </BrowserRouter>
+      </BrowserRouter>
+    </GlobalErrorBoundary>
   </React.StrictMode>
 );

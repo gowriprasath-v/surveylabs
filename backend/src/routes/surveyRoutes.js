@@ -118,6 +118,7 @@ router.post('/admin/surveys', requireAuth, validate.validateSurvey, surveyContro
 router.get('/admin/surveys/:id', requireAuth, surveyController.getSurvey);
 router.put('/admin/surveys/:id', requireAuth, validate.validateSurvey, surveyController.updateSurvey);
 router.delete('/admin/surveys/:id', requireAuth, surveyController.deleteSurvey);
+router.post('/admin/surveys/:id/publish', requireAuth, surveyController.publishSurvey);
 router.post('/admin/surveys/:id/questions', requireAuth, surveyController.addQuestion);
 router.put('/admin/surveys/:id/questions/:qid', requireAuth, surveyController.updateQuestion);
 router.delete('/admin/surveys/:id/questions/:qid', requireAuth, surveyController.deleteQuestion);
@@ -128,5 +129,8 @@ router.get('/admin/surveys/:id/responses', requireAuth, surveyController.getIndi
 
 // Public routes (no auth)
 router.get('/public/surveys/:id', surveyController.getPublicSurvey);
+
+// Danger zone
+router.delete('/admin/responses/clear-all', requireAuth, surveyController.clearAllResponses);
 
 module.exports = router;

@@ -9,6 +9,7 @@ const migrations = [
   `ALTER TABLE responses ADD COLUMN quality_flags TEXT DEFAULT '[]'`,
   `ALTER TABLE responses ADD COLUMN quality_label TEXT DEFAULT 'good'`,
   `ALTER TABLE responses ADD COLUMN completion_time_ms INTEGER DEFAULT NULL`,
+  `ALTER TABLE users ADD COLUMN requires_password_reset INTEGER DEFAULT 0`,
 ];
 
 function runMigrations() {

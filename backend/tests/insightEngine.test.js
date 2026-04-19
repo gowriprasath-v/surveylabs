@@ -31,33 +31,41 @@ const path = require('path');
     const resultA = generateInsights(mockSurveyA, responsesA);
     assert.ok(resultA.some(i => i.type === 'consensus'), "Test A Failed: Should generate 'consensus' insight");
 
-    // Test B: rating question with average 4.5 → insight with 'Positive'
+    // Test B: rating question with average 4.5 → insight with 'positive'
     const mockSurveyB = {
       questions: [{ id: 'q2', type: 'rating', label: 'Service Quality' }]
     };
     const responsesB = [
       { answers: [{ question_id: 'q2', answer_value: '5' }] },
-      { answers: [{ question_id: 'q2', answer_value: '4' }] }
+      { answers: [{ question_id: 'q2', answer_value: '4' }] },
+      { answers: [{ question_id: 'q2', answer_value: '5' }] },
     ];
     const resultB = generateInsights(mockSurveyB, responsesB);
-    const hasPositive = resultB.some(i => i.type === 'rating' && i.text.includes('Positive'));
-    assert.ok(hasPositive, "Test B Failed: Rating 4.5 should generate insight containing 'Positive'");
+    const hasPositive = resultB.some(i => i.type === 'rating' && i.text.toLowerCase().includes('positive'));
+    assert.ok(hasPositive, "Test B Failed: Rating 4.7 should generate insight containing 'positive'");
 
     // Test C: null or empty results → returns empty array, does NOT throw
     // 1. null survey data
     const resultC1 = generateInsights(null, []);
     assert.deepStrictEqual(resultC1, [], "Test C Failed: null surveyData should return empty array");
     
-    // 2. empty questions
+    // 2. empty questions array with 1 response → empty (no questions to analyse)
     const resultC2 = generateInsights({ questions: [] }, [{ answers: [] }]);
     assert.deepStrictEqual(resultC2, [], "Test C Failed: empty questions should return empty array");
     
-    // 3. no responses
+    // 3. no responses → returns empty array
     const mockSurveyC3 = {
       questions: [{ id: 'q3', type: 'text_short', label: 'Empty' }]
     };
     const resultC3 = generateInsights(mockSurveyC3, []);
     assert.deepStrictEqual(resultC3, [], "Test C Failed: empty responses should return empty array");
+
+    // 4. < 3 responses with questions → returns confidence warning, not empty
+    const resultC4 = generateInsights(
+      { questions: [{ id: 'q4', type: 'mcq', label: 'Pick', options: ['A'] }] },
+      [{ answers: [{ question_id: 'q4', answer_value: 'A' }] }]
+    );
+    assert.ok(resultC4.some(i => i.type === 'confidence'), "Test C Failed: < 3 responses should return confidence warning");
 
     // Test D: text answers with repeated words → insight type 'keywords' generated
     const mockSurveyD = {

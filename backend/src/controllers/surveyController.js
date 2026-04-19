@@ -1,3 +1,4 @@
+
 const surveyService = require('../services/surveyService');
 
 const getSurveys = (req, res, next) => {
@@ -41,6 +42,15 @@ const deleteSurvey = (req, res, next) => {
   try {
     surveyService.deleteSurvey(req.params.id, req.user.id);
     res.status(200).json({ success: true, data: { message: 'Survey deleted' } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const publishSurvey = (req, res, next) => {
+  try {
+    const survey = surveyService.updateSurvey(req.params.id, req.user.id, { is_active: 1 });
+    res.json({ success: true, data: survey });
   } catch (err) {
     next(err);
   }
@@ -123,12 +133,22 @@ const getIndividualResponses = (req, res, next) => {
   }
 };
 
+const clearAllResponses = (req, res, next) => {
+  try {
+    surveyService.clearAllResponses(req.user.id);
+    res.json({ success: true, message: 'All responses cleared.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getSurveys,
   getSurvey,
   createSurvey,
   updateSurvey,
   deleteSurvey,
+  publishSurvey,
   addQuestion,
   updateQuestion,
   deleteQuestion,
@@ -137,4 +157,5 @@ module.exports = {
   getPulse,
   getResults,
   getIndividualResponses,
+  clearAllResponses,
 };

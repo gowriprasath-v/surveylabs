@@ -1,64 +1,123 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const userRepository = require('../repositories/userRepository');
+const ApiError = require('../utils/ApiError');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'survey_platform_jwt_secret_2024_change_in_production';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS, 10) || 10;
-
-function createError(message, statusCode = 400) {
-  const err = new Error(message);
-  err.statusCode = statusCode;
-  return err;
-}
 
 function login(username, password) {
   if (!username || !password) {
-    throw createError('Username and password are required');
+    throw new ApiError(400, 'Username and password are required');
   }
 
   const user = userRepository.findByUsername(username);
   if (!user) {
-    throw createError('Invalid credentials', 401);
+    throw new ApiError(401, 'Invalid credentials');
   }
 
   const isMatch = bcrypt.compareSync(password, user.password);
   if (!isMatch) {
-    throw createError('Invalid credentials', 401);
+    throw new ApiError(401, 'Invalid credentials');
   }
 
-  const token = jwt.sign(
-    { id: user.id, username: user.username },
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN }
-  );
+  const payload = { id: user.id, username: user.username };
+  
+  const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' });
+  const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
   return {
-    token,
-    user: { id: user.id, username: user.username },
+    accessToken,
+    refreshToken,
+    user: { id: user.id, username: user.username, requires_password_reset: user.requires_password_reset === 1 },
   };
 }
 
 function register(username, password) {
   if (!username || !password) {
-    throw createError('Username and password are required');
+    throw new ApiError(400, 'Username and password are required');
+  }
+  
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(username)) {
+    throw new ApiError(400, 'Invalid email format');
   }
 
-  if (username.length < 3) {
-    throw createError('Username must be at least 3 characters');
-  }
-
-  if (password.length < 6) {
-    throw createError('Password must be at least 6 characters');
+  if (password.length < 8) {
+    throw new ApiError(400, 'Password must be at least 8 characters long');
   }
 
   const existing = userRepository.findByUsername(username);
   if (existing) {
-    throw createError('Username already taken', 409);
+    throw new ApiError(409, 'Username already taken');
   }
 
   const hashedPassword = bcrypt.hashSync(password, BCRYPT_ROUNDS);
   return userRepository.createUser({ username, hashedPassword });
 }
 
-module.exports = { login, register };
+function refresh(token) {
+  if (!token) {
+    throw new ApiError(401, 'Refresh token required');
+  }
+  
+  try {
+    const decoded = jwt.verify(token, JWT_REFRESH_SECRET);
+    const user = userRepository.findById(decoded.id);
+    if (!user) throw new ApiError(401, 'User no longer exists');
+
+    const payload = { id: user.id, username: user.username };
+    const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' });
+    const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+
+    return { accessToken, refreshToken };
+  } catch (err) {
+    throw new ApiError(401, 'Invalid or expired refresh token');
+  }
+}
+
+function resetInitialPassword(userId, newPassword) {
+  if (!newPassword || newPassword.length < 8) {
+    throw new ApiError(400, 'New password must be at least 8 characters long');
+  }
+  const user = userRepository.findById(userId);
+  if (!user) throw new ApiError(404, 'User not found');
+  if (user.requires_password_reset === 0) {
+    throw new ApiError(400, 'Password reset not required for this user');
+  }
+  
+  const hashedPassword = bcrypt.hashSync(newPassword, BCRYPT_ROUNDS);
+  userRepository.updatePassword(user.id, hashedPassword);
+  return { success: true };
+}
+
+function changePassword(userId, currentPassword, newPassword) {
+  if (!currentPassword || !newPassword) {
+    throw new ApiError(400, 'Both current and new password are required');
+  }
+  if (newPassword.length < 8) {
+    throw new ApiError(400, 'New password must be at least 8 characters long');
+  }
+  const user = userRepository.findById(userId);
+  if (!user) throw new ApiError(404, 'User not found');
+
+  const isMatch = bcrypt.compareSync(currentPassword, user.password);
+  if (!isMatch) {
+    throw new ApiError(401, 'Current password is incorrect');
+  }
+
+  const hashedPassword = bcrypt.hashSync(newPassword, BCRYPT_ROUNDS);
+  userRepository.updatePassword(user.id, hashedPassword);
+  return { success: true };
+}
+
+function deleteAccount(userId) {
+  const user = userRepository.findById(userId);
+  if (!user) throw new ApiError(404, 'User not found');
+  
+  userRepository.deleteUser(userId);
+  return { success: true };
+}
+
+module.exports = { login, register, refresh, resetInitialPassword, changePassword, deleteAccount };

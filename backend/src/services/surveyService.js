@@ -17,6 +17,13 @@ function createError(message, statusCode = 400) {
   return err;
 }
 
+function verifyOwnership(surveyId, userId) {
+  const survey = surveyRepository.findById(surveyId);
+  if (!survey) throw createError('Survey not found', 404);
+  if (survey.created_by !== userId) throw createError('Forbidden: You do not own this survey', 403);
+  return survey;
+}
+
 // Normalise 'text' → 'text_long' to satisfy the existing DB CHECK constraint.
 function normalizeType(t) {
   if (!t) return 'text_long';
@@ -34,8 +41,7 @@ function getAllSurveys(userId) {
 }
 
 function getSurveyWithQuestions(surveyId, userId) {
-  const survey = surveyRepository.findByIdForOwner(surveyId, userId);
-  if (!survey) throw createError('Survey not found', 404);
+  const survey = verifyOwnership(surveyId, userId);
   const questions = questionRepository.findBySurveyId(surveyId);
   return { survey, questions };
 }
@@ -117,8 +123,7 @@ function createSurvey(userId, { title, description, mode, questions }) {
  * Update survey metadata and atomically replace all questions.
  */
 function updateSurvey(surveyId, userId, updates) {
-  const survey = surveyRepository.findByIdForOwner(surveyId, userId);
-  if (!survey) throw createError('Survey not found', 404);
+  const survey = verifyOwnership(surveyId, userId);
 
   const title       = ((updates.title       ?? survey.title) || '').trim();
   const description = ((updates.description ?? survey.description ?? '')).trim();
@@ -183,16 +188,14 @@ function updateSurvey(surveyId, userId, updates) {
 }
 
 function deleteSurvey(surveyId, userId) {
-  const survey = surveyRepository.findByIdForOwner(surveyId, userId);
-  if (!survey) throw createError('Survey not found', 404);
+  const survey = verifyOwnership(surveyId, userId);
   return surveyRepository.remove(surveyId);
 }
 
 // ── Question mutations ────────────────────────────────────────────────────────
 
 function addQuestion(surveyId, userId, { type, label, options, required, order_index, logic_rules }) {
-  const survey = surveyRepository.findByIdForOwner(surveyId, userId);
-  if (!survey) throw createError('Survey not found', 404);
+  const survey = verifyOwnership(surveyId, userId);
 
   const normType = normalizeType(type);
   if (!normType || !VALID_TYPES.includes(normType)) {
@@ -222,8 +225,7 @@ function addQuestion(surveyId, userId, { type, label, options, required, order_i
 }
 
 function updateQuestion(surveyId, questionId, userId, updates) {
-  const survey = surveyRepository.findByIdForOwner(surveyId, userId);
-  if (!survey) throw createError('Survey not found', 404);
+  const survey = verifyOwnership(surveyId, userId);
 
   const question = questionRepository.findById(questionId);
   if (!question || question.survey_id !== surveyId) throw createError('Question not found', 404);
@@ -246,6 +248,10 @@ function updateQuestion(surveyId, questionId, userId, updates) {
 
   questionRepository.update(questionId, { type, label, options, required, order_index });
 
+  if (updates.order_index !== undefined && updates.order_index !== question.order_index) {
+    questionRepository.reorderQuestion(surveyId, questionId, updates.order_index);
+  }
+
   if (updates.logic_rules !== undefined) {
     questionRepository.updateLogicRules(questionId, updates.logic_rules);
   }
@@ -254,8 +260,7 @@ function updateQuestion(surveyId, questionId, userId, updates) {
 }
 
 function updateLogicRules(surveyId, questionId, userId, logicRules) {
-  const survey = surveyRepository.findByIdForOwner(surveyId, userId);
-  if (!survey) throw createError('Survey not found', 404);
+  const survey = verifyOwnership(surveyId, userId);
 
   const question = questionRepository.findById(questionId);
   if (!question || question.survey_id !== surveyId) throw createError('Question not found', 404);
@@ -264,13 +269,13 @@ function updateLogicRules(surveyId, questionId, userId, logicRules) {
 }
 
 function deleteQuestion(surveyId, questionId, userId) {
-  const survey = surveyRepository.findByIdForOwner(surveyId, userId);
-  if (!survey) throw createError('Survey not found', 404);
+  const survey = verifyOwnership(surveyId, userId);
 
   const question = questionRepository.findById(questionId);
   if (!question || question.survey_id !== surveyId) throw createError('Question not found', 404);
 
   questionRepository.remove(questionId);
+  questionRepository.rebalanceOrder(surveyId);
 }
 
 // ── Results ───────────────────────────────────────────────────────────────────
@@ -319,19 +324,20 @@ function getResults(surveyId, userId) {
   });
 
   return {
-    survey:          { id: survey.id, title: survey.title, description: survey.description, is_active: survey.is_active },
-    total_responses: totalResponses,
-    completion_rate: totalResponses,
-    quality_counts:  qualityCounts,
-    questions:       questionsWithResults,
+    survey:         { id: survey.id, title: survey.title, description: survey.description, is_active: survey.is_active },
+    stats: {
+      total_responses: totalResponses,
+      completion_rate: totalResponses,
+      quality_counts:  qualityCounts,
+    },
+    questions:      questionsWithResults,
   };
 }
 
 // ── Pulse ─────────────────────────────────────────────────────────────────────
 
 function getPulse(surveyId, userId) {
-  const survey = surveyRepository.findByIdForOwner(surveyId, userId);
-  if (!survey) throw createError('Survey not found', 404);
+  const survey = verifyOwnership(surveyId, userId);
 
   const totalResponses    = responseRepository.countBySurveyId(surveyId);
   const lastHour          = responseRepository.countLastHour(surveyId);
@@ -357,8 +363,7 @@ function getPulse(surveyId, userId) {
 // ── Individual Responses (for CSV export) ────────────────────────────────────
 
 function getIndividualResponses(surveyId, userId) {
-  const survey = surveyRepository.findByIdForOwner(surveyId, userId);
-  if (!survey) throw createError('Survey not found', 404);
+  const survey = verifyOwnership(surveyId, userId);
 
   const questions = questionRepository.findBySurveyId(surveyId);
   const responses = responseRepository.findAllBySurveyId(surveyId);
@@ -373,10 +378,15 @@ function getIndividualResponses(surveyId, userId) {
       quality_label: r.quality_label,
       quality_score: r.quality_score,
       completion_time_ms: r.completion_time_ms,
-      answers: answers.map(a => ({
-        question_id: a.question_id,
-        answer_value: a.answer_value,
-      })),
+      respondent_ip: r.respondent_ip || null,
+      answers: answers.map(a => {
+        const q = questions.find(q => q.id === a.question_id);
+        return {
+          question_id: a.question_id,
+          label: q ? q.label : null,
+          answer_value: a.answer_value,
+        };
+      }),
     };
   });
 
@@ -402,4 +412,31 @@ module.exports = {
   getResults,
   getIndividualResponses,
   getPulse,
+  clearAllResponses,
 };
+
+function clearAllResponses(userId) {
+  // Get all surveys owned by this user
+  const surveys = surveyRepository.findAllByUser(userId);
+  const surveyIds = surveys.map(s => s.id);
+  if (surveyIds.length === 0) return { deleted: 0 };
+
+  // Use a transaction to atomically delete all answers and responses
+  const clearFn = db.transaction(() => {
+    let totalDeleted = 0;
+    for (const sid of surveyIds) {
+      // Delete answers for all responses in this survey
+      db.prepare(`
+        DELETE FROM answers WHERE response_id IN (
+          SELECT id FROM responses WHERE survey_id = ?
+        )
+      `).run(sid);
+      // Delete responses
+      const info = db.prepare('DELETE FROM responses WHERE survey_id = ?').run(sid);
+      totalDeleted += info.changes;
+    }
+    return { deleted: totalDeleted };
+  });
+
+  return clearFn();
+}

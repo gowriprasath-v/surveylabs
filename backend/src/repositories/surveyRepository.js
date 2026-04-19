@@ -1,7 +1,7 @@
 const db = require('../../database');
 
 function findAllByUser(userId) {
-  return db.prepare(`
+  const surveys = db.prepare(`
     SELECT
       surveys.*,
       COUNT(DISTINCT questions.id)  AS question_count,
@@ -13,6 +13,24 @@ function findAllByUser(userId) {
     GROUP BY surveys.id
     ORDER BY surveys.created_at DESC
   `).all(userId);
+
+  // Attach 7-day daily response counts (sparkline data) per survey
+  const today = new Date();
+  return surveys.map(survey => {
+    const spark = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10); // YYYY-MM-DD
+      const row = db.prepare(`
+        SELECT COUNT(*) AS cnt FROM responses
+        WHERE survey_id = ?
+        AND DATE(submitted_at) = ?
+      `).get(survey.id, dateStr);
+      spark.push(row ? row.cnt : 0);
+    }
+    return { ...survey, spark };
+  });
 }
 
 function findById(id) {

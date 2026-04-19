@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
+import { Menu } from 'lucide-react';
 
 export default function AppShell({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-
   useEffect(() => {
     if (mobileOpen) {
       document.body.style.overflow = 'hidden';
@@ -14,32 +14,33 @@ export default function AppShell({ children }) {
   }, [mobileOpen]);
 
   return (
-    <div className="flex bg-[var(--bg-base)] text-[var(--text-primary)] min-h-[100dvh]">
+    <div className="flex bg-base text-text-1 min-h-[100dvh] relative md:p-4 md:gap-4">
       <Sidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
 
-      <main className="flex-1 min-w-0 flex flex-col h-[100dvh]">
+      <main className="flex-1 min-w-0 flex flex-col h-[100dvh] md:h-[calc(100dvh-32px)] relative z-10">
         {/* Mobile top bar */}
-        <div className="md:hidden flex flex-shrink-0 items-center h-14 bg-[var(--bg-surface)] border-b border-[var(--border)] px-4">
+        <div className="md:hidden flex flex-shrink-0 items-center h-14 bg-surface border-b border-white/10 px-4 sticky top-0 z-40">
           <button
             onClick={() => setMobileOpen(true)}
-            className="p-2 -ml-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            className="p-2 -ml-2 text-text-2 hover:text-text-1"
             aria-label="Open sidebar"
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="3" y1="12" x2="21" y2="12"></line>
-              <line x1="3" y1="6" x2="21" y2="6"></line>
-              <line x1="3" y1="18" x2="21" y2="18"></line>
-            </svg>
+            <Menu size={24} />
           </button>
-          <span className="ml-2 text-md font-semibold" style={{ color: 'var(--text-primary)' }}>
-             <span style={{ color: 'var(--brand)', marginRight: '4px' }}>◆</span> SurveyLab
+          <span className="ml-2 text-md font-display font-semibold tracking-tight text-text-1 flex items-center">
+             <div className="w-6 h-6 rounded-lg bg-primary flex items-center justify-center mr-2">
+               <span className="text-white font-bold text-[10px]">S</span>
+             </div> 
+             SurveyLabs
           </span>
         </div>
 
         {/* Scrollable content area */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden w-full h-full relative">
-          <div className="w-full max-w-full lg:max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-4 sm:gap-6 min-h-full">
-            {children}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden w-full h-full relative scroll-smooth">
+          <div className="w-full max-w-[1320px] mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8 min-h-full flex flex-col">
+            <div className="flex flex-col gap-4 sm:gap-6 flex-1 w-full relative z-10">
+              {children}
+            </div>
           </div>
         </div>
       </main>

@@ -5,7 +5,7 @@ function findByUsername(username) {
 }
 
 function findById(id) {
-  return db.prepare('SELECT id, username, created_at FROM users WHERE id = ?').get(id);
+  return db.prepare('SELECT id, username, requires_password_reset, created_at FROM users WHERE id = ?').get(id);
 }
 
 function createUser({ username, hashedPassword }) {
@@ -13,4 +13,12 @@ function createUser({ username, hashedPassword }) {
   return findById(result.lastInsertRowid);
 }
 
-module.exports = { findByUsername, findById, createUser };
+function updatePassword(userId, newHashedPassword) {
+  return db.prepare('UPDATE users SET password = ?, requires_password_reset = 0 WHERE id = ?').run(newHashedPassword, userId);
+}
+
+function deleteUser(userId) {
+  return db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+}
+
+module.exports = { findByUsername, findById, createUser, updatePassword, deleteUser };

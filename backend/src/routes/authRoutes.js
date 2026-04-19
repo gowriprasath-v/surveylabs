@@ -58,6 +58,10 @@ const validate = require('../middleware/validate');
 
 router.post('/login',    validate.validateLogin, authController.login);
 router.post('/register', validate.validateLogin, authController.register);
-router.get('/me',        requireAuth,            authController.me);
+router.post('/refresh',  authController.refresh);
+router.post('/reset-initial-password', requireAuth, authController.resetInitialPassword);
+router.post('/change-password',        requireAuth, authController.changePassword);
+router.delete('/me',     requireAuth, authController.deleteAccount);
+router.get('/me',        requireAuth, authController.me);
 
 module.exports = router;

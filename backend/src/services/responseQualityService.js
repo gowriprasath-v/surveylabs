@@ -2,9 +2,14 @@ function scoreResponse(answers, completionTimeMs, questions) {
   const flags = [];
   let score = 100;
 
-  if (completionTimeMs && completionTimeMs < 8000) {
-    flags.push({ type: 'too_fast', severity: 'high', detail: `Completed in ${(completionTimeMs / 1000).toFixed(1)}s` });
-    score -= 40;
+  const totalQuestions = questions ? questions.length : answers.length;
+  if (completionTimeMs && totalQuestions > 0) {
+    // Dynamic minimum expected time (prevents tiny surveys from being marked suspect too easily)
+    const minExpectedMs = Math.min(60000, totalQuestions * 2500);
+    if (completionTimeMs < minExpectedMs) {
+      flags.push({ type: 'too_fast', severity: 'high', detail: `Completed in ${(completionTimeMs / 1000).toFixed(1)}s` });
+      score -= completionTimeMs < minExpectedMs * 0.5 ? 45 : 25;
+    }
   }
 
   const questionMap = {};
@@ -57,7 +62,6 @@ function scoreResponse(answers, completionTimeMs, questions) {
     }
   }
 
-  const totalQuestions = questions ? questions.length : answers.length;
   const answeredCount = answers.filter((a) => a.answer_value && String(a.answer_value).trim() !== '').length;
   const skippedRatio = totalQuestions > 0 ? (totalQuestions - answeredCount) / totalQuestions : 0;
 

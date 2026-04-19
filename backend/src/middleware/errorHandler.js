@@ -7,7 +7,9 @@ function errorHandler(err, req, res, next) {
   }
 
   const statusCode = err.statusCode || 500;
-  const message = statusCode === 500 ? 'Internal server error' : err.message;
+  // If it's an operational ApiError, pass the message, otherwise mask 500s.
+  const isOperational = err.isOperational !== undefined ? err.isOperational : false;
+  const message = (statusCode !== 500 || isOperational) ? err.message : 'Internal Server Error';
 
   res.status(statusCode).json({
     success: false,

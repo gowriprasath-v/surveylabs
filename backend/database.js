@@ -19,7 +19,8 @@ db.exec(`
     username TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
-    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+    requires_password_reset INTEGER NOT NULL DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS surveys (
@@ -77,8 +78,8 @@ db.exec(`
 const existingAdmin = db.prepare('SELECT id FROM users WHERE username = ?').get('admin');
 if (!existingAdmin) {
   const hashedPassword = bcrypt.hashSync('admin123', 10);
-  db.prepare('INSERT OR IGNORE INTO users (username, password) VALUES (?, ?)').run('admin', hashedPassword);
-  console.log('[DB] Default admin user seeded (admin / admin123)');
+  db.prepare('INSERT OR IGNORE INTO users (username, password, requires_password_reset) VALUES (?, ?, ?)').run('admin', hashedPassword, 1);
+  console.log('[DB] Default admin user seeded (admin / admin123) with requires_password_reset=1');
 }
 
 module.exports = db;

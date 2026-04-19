@@ -89,12 +89,13 @@ export function useSurveyEngine(questions) {
 
   const isComplete = currentIndex >= visibleQuestions.length && visibleQuestions.length > 0;
 
-  const getSubmissionPayload = useCallback(() => {
+  const getSubmissionPayload = useCallback((overrideAnswers = {}) => {
+    const mergedAnswers = { ...answers, ...overrideAnswers };
     return visibleQuestions
-      .filter(q => answers[q.id] !== undefined && answers[q.id] !== '')
+      .filter(q => mergedAnswers[q.id] !== undefined && mergedAnswers[q.id] !== '')
       .map((q) => ({
         question_id: q.id,
-        answer_value: answers[q.id],
+        answer_value: mergedAnswers[q.id],
       }));
   }, [answers, visibleQuestions]);
 

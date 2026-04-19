@@ -1,130 +1,173 @@
-// ── MODIFIED START ── (Full sidebar upgrade: sections, glassmorphism, lucide icons, collapse)
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useStore } from '../../context/StoreContext';
 import {
-  LayoutDashboard, ClipboardList, BarChart2,
-  Settings, ChevronLeft, Menu
+  LayoutDashboard,
+  ClipboardList,
+  MessageSquare,
+  BarChart2,
+  LayoutTemplate,
+  Download,
+  Link,
+  Settings,
+  HelpCircle,
+  LogOut,
+  ChevronLeft,
 } from 'lucide-react';
+import Badge from '../ui/Badge';
 
-const navSections = [
+const NAVIDETAILS = [
   {
-    label: 'Main',
+    category: 'Main',
     items: [
       { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    ],
+      { path: '/surveys', icon: ClipboardList, label: 'Surveys', showCount: true },
+      { path: '/conversations', icon: MessageSquare, label: 'Conversations' },
+      { path: '/analytics', icon: BarChart2, label: 'Analytics' },
+    ]
   },
   {
-    label: 'Insights',
+    category: 'Workspace',
     items: [
-      { path: '/analytics', icon: BarChart2, label: 'Analytics' },
-      { path: '/settings',  icon: Settings,  label: 'Settings'  },
-    ],
+      { path: '/templates', icon: LayoutTemplate, label: 'Templates' },
+      { path: '/export', icon: Download, label: 'Export Hub' },
+      { path: '#', icon: Link, label: 'Integrations', badge: 'Soon', disabled: true },
+    ]
   },
+  {
+    category: 'Account',
+    items: [
+      { path: '/settings', icon: Settings, label: 'Settings' },
+      { path: 'https://github.com', icon: HelpCircle, label: 'Help & Docs', external: true },
+    ]
+  }
 ];
 
 export default function Sidebar({ mobileOpen, setMobileOpen }) {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const { activeSurveysCount } = useStore();
   const [collapsed, setCollapsed] = useState(false);
 
-  const sidebarWidth = collapsed ? 'md:w-16' : 'md:w-[220px]';
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname, setMobileOpen]);
 
-  const sidebarClasses = `
-    fixed top-0 left-0 h-[100vh] w-[260px] max-w-[80vw] z-50
-    bg-white/70 backdrop-blur-xl border-r border-gray-200 shadow-xl sm:shadow-md
-    transition-transform duration-200 ease-in-out
-    flex flex-col
-    md:sticky md:top-0 md:w-[256px] md:max-w-[256px] md:shrink-0 md:translate-x-0
-    ${collapsed ? 'md:w-16 md:max-w-[4rem]' : ''}
-    ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
-  `;
+  const activeClasses = "bg-primary/10 border border-primary/20 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]";
+  const inactiveClasses = "text-text-2 hover:bg-white/5 hover:text-text-1 border border-transparent";
+  const collapsedWidth = 72;
+  const expandedWidth = 260;
 
   return (
     <>
-      {/* Mobile Backdrop */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden transition-opacity duration-200"
+          className="fixed inset-0 z-40 bg-base/70 md:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
-      <aside className={sidebarClasses}>
-
-        {/* Desktop collapse toggle */}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="
-            absolute -right-3 top-6 z-10
-            w-6 h-6 rounded-full
-            bg-white border border-gray-200
-            shadow-sm items-center justify-center
-            hover:bg-gray-50 transition-colors
-            hidden md:flex
-          "
-        >
-          <ChevronLeft
-            size={12}
-            className={`text-gray-500 transition-transform duration-200 ${collapsed ? 'rotate-180' : ''}`}
-          />
-        </button>
-
-        {/* Logo */}
-        <div className={`flex items-center pt-4 mb-4 ${collapsed ? 'px-3 justify-center' : 'px-5'}`}>
-          <div className="flex items-center gap-3 overflow-hidden m-0 p-0">
-            <div className="w-[40px] h-[40px] rounded-[12px] bg-indigo-600 flex items-center justify-center shrink-0">
-              <span className="text-white font-bold text-[15px]">S</span>
+      <div
+        className={`fixed top-0 left-0 h-[100dvh] z-50 flex flex-col md:sticky md:mt-8 md:top-8 md:ml-4 lg:ml-8 md:shrink-0 md:h-[calc(100dvh-64px)] transition-transform duration-300 ${
+          mobileOpen ? 'translate-x-0 h-full' : 'md:translate-x-0 -translate-x-full'
+        }`}
+        style={{ width: collapsed ? collapsedWidth : expandedWidth }}
+      >
+        <div className={`absolute inset-0 glass-panel border flex flex-col rounded-[var(--radius-xl)] overflow-hidden ${mobileOpen ? 'rounded-none' : ''}`}>
+        {/* Logo/Brand */}
+        <div className={`relative flex items-center h-16 shrink-0 mt-2 ${collapsed ? 'px-0 justify-center' : 'px-6'}`}>
+          <div className="flex items-center gap-3 overflow-hidden whitespace-nowrap">
+            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shrink-0">
+              <span className="text-white font-bold text-[14px]">S</span>
             </div>
             {!collapsed && (
-              <span className="text-[var(--text-primary)] font-semibold tracking-tight whitespace-nowrap text-[15px]">
-                SurveyLab
-              </span>
+              <div className="flex flex-col">
+                <span className="text-text-1 font-semibold tracking-tight text-[17px] leading-none mb-1">
+                  SurveyLabs
+                </span>
+                <span className="text-text-2 text-[11px] font-medium leading-none">
+                  Workspace
+                </span>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Nav sections */}
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-5">
-          {navSections.map((section) => (
-            <div key={section.label}>
+        {/* Navigation items */}
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 space-y-6">
+          {NAVIDETAILS.map((section, idx) => (
+            <div key={idx} className="flex flex-col">
               {!collapsed && (
-                <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
-                  {section.label}
+                <p className="px-6 mb-2 text-[11px] font-semibold text-text-2/50 uppercase tracking-widest">
+                  {section.category}
                 </p>
               )}
-              <ul className="space-y-0.5">
-                {section.items.map((item) => {
-                  const isActive = location.pathname === item.path
-                    || location.pathname.startsWith(item.path + '/');
-                    
-                  const baseClasses = "relative flex items-center text-[13px] font-medium transition-all duration-150 ease-in-out group min-h-[44px]";
-                  const expandedClasses = isActive
-                    ? "bg-indigo-600 text-white shadow-[0_4px_12px_rgba(79,70,229,0.3)] rounded-xl px-3 py-3 gap-3"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-xl px-3 py-3 gap-3";
-                  const collapsedClasses = "justify-center rounded-xl hover:bg-[rgba(0,0,0,0.05)]";
+              <ul className="space-y-1">
+                {section.items.map((item, i) => {
+                  const isActive = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
+                  const content = (
+                    <>
+                      <item.icon size={18} className={`shrink-0 transition-colors ${isActive ? 'text-primary' : (item.disabled ? 'text-text-2/30' : 'text-text-2 group-hover:text-text-1')}`} />
+                      {!collapsed && (
+                        <span className={`whitespace-nowrap font-medium text-sm transition-colors ${isActive ? 'text-text-1' : (item.disabled ? 'text-text-2/40' : '')}`}>
+                          {item.label}
+                        </span>
+                      )}
+                      {!collapsed && item.showCount && activeSurveysCount > 0 && typeof activeSurveysCount === 'number' && (
+                         <div className="ml-auto w-5 h-5 flex items-center justify-center rounded bg-primary/20 text-[10px] font-bold text-primary">
+                           {activeSurveysCount}
+                         </div>
+                      )}
+                      {!collapsed && item.badge && (
+                         <div className="ml-auto">
+                           <Badge variant="amber" className="!px-1.5 !py-0 !text-[9px]">{item.badge}</Badge>
+                         </div>
+                      )}
+                    </>
+                  );
+
+                  const commonClasses = `relative flex items-center h-10 group transition-all duration-200 outline-none
+                    ${collapsed ? 'justify-center mx-3 rounded-[var(--radius-md)] hover:bg-white/5' : 'mx-3 px-3 rounded-[var(--radius-md)] gap-3'} 
+                    ${item.disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
+                    ${isActive && collapsed ? 'bg-primary/20 text-primary' : ''}
+                    ${isActive && !collapsed ? activeClasses : (!collapsed ? inactiveClasses : '')}`;
+
+                  if (item.disabled) {
+                    return (
+                       <li key={i}>
+                         <div className={commonClasses} title={collapsed ? item.label : undefined}>
+                           {content}
+                         </div>
+                       </li>
+                    )
+                  }
+
+                  if (item.external) {
+                    return (
+                      <li key={i}>
+                        <a
+                          href={item.path}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={collapsed ? item.label : undefined}
+                          className={'relative flex items-center h-10 group transition-all duration-200 outline-none mx-3 px-3 rounded-[var(--radius-md)] gap-3 cursor-pointer ' + inactiveClasses}
+                        >
+                          {content}
+                        </a>
+                      </li>
+                    );
+                  }
 
                   return (
-                    <li key={item.path}>
+                    <li key={i}>
                       <NavLink
                         to={item.path}
-                        end
-                        onClick={() => setMobileOpen(false)}
                         title={collapsed ? item.label : undefined}
-                        className={`${baseClasses} ${collapsed ? collapsedClasses : expandedClasses}`}
+                        className={commonClasses}
                       >
-                        {collapsed && isActive && (
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[20px] bg-indigo-600 rounded-[2px]" />
-                        )}
-                        <item.icon
-                          size={16}
-                          className={`shrink-0 transition-colors duration-150 ${
-                            collapsed
-                              ? (isActive ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-600')
-                              : (isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-600')
-                          }`}
-                        />
-                        {!collapsed && item.label}
+                        {content}
                       </NavLink>
                     </li>
                   );
@@ -134,30 +177,42 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
           ))}
         </nav>
 
-        {/* User section */}
-        <div className="mt-auto px-3 border-t border-[rgba(0,0,0,0.05)] pt-3 pb-4">
-          <div className={`flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-gray-100/80 cursor-pointer transition-colors min-h-[48px] ${collapsed ? 'justify-center' : ''}`}>
-            <div className="w-7 h-7 rounded-full bg-[var(--brand-light)] flex items-center justify-center text-[var(--brand)] text-xs font-semibold shrink-0">
-              {user?.username ? user.username.charAt(0).toUpperCase() : 'U'}
-            </div>
-            {!collapsed && (
-              <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-gray-900 truncate tracking-wide">
-                    {user?.username || 'Admin'}
-                  </p>
-                  <button
-                    onClick={logout}
-                    className="text-[10px] text-gray-400 hover:text-indigo-600 font-semibold uppercase tracking-wider transition-colors text-left"
-                  >
-                  Logout
-                </button>
+        <div className="mt-auto shrink-0 border-t border-white/10 bg-surface-2">
+          <div className={`flex items-center h-[72px] ${collapsed ? 'justify-center px-0' : 'px-6'}`}>
+            <div className={`flex items-center w-full gap-3 transition-colors rounded-[var(--radius-md)] p-2 cursor-pointer ${collapsed ? 'w-auto hover:bg-white/5' : 'hover:bg-white/5'}`}>
+              <div className="w-9 h-9 rounded-2xl bg-surface-2 border border-white/10 flex items-center justify-center text-text-1 text-xs font-semibold shrink-0">
+                {user?.username ? user.username.charAt(0).toUpperCase() : 'U'}
               </div>
-            )}
+              {!collapsed && (
+                <div className="flex flex-col min-w-0 overflow-hidden flex-1">
+                  <span className="text-sm font-semibold text-text-1 truncate pointer-events-none">
+                    {user?.username || 'Admin User'}
+                  </span>
+                  <span className="text-xs text-text-2 truncate pointer-events-none">
+                    Administrator
+                  </span>
+                </div>
+              )}
+              {!collapsed && (
+                <button onClick={(e) => { e.preventDefault(); logout(); }} className="p-1.5 rounded-md text-text-2 hover:text-danger hover:bg-danger/10 transition-colors" title="Log out">
+                  <LogOut size={16} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
-      </aside>
+        </div>
+
+        {/* Desktop Collapse Toggle */}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="absolute -right-3 top-6 z-10 w-6 h-6 rounded-full bg-surface-2 border border-white/15 shadow-sm flex items-center justify-center hover:bg-white/5 transition-colors hidden md:flex"
+        >
+          <ChevronLeft size={12} className={`text-text-2 transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`} />
+        </button>
+
+      </div>
     </>
   );
 }
-// ── MODIFIED END ──

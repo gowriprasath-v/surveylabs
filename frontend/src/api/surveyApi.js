@@ -40,6 +40,12 @@ export async function deleteQuestion(surveyId, qId) {
   return response.data.data;
 }
 
+export async function reorderQuestion(surveyId, qId, newIndex) {
+  // Using updateQuestion since our backend uses PUT to update order_index
+  const response = await client.put(`/admin/surveys/${surveyId}/questions/${qId}`, { order_index: newIndex });
+  return response.data.data;
+}
+
 export async function updateLogicRules(surveyId, qId, logicRules) {
   const response = await client.put(`/admin/surveys/${surveyId}/questions/${qId}/logic`, { logic_rules: logicRules });
   return response.data.data;
@@ -63,4 +69,9 @@ export async function getPublicSurvey(id) {
 export async function getIndividualResponses(id) {
   const response = await client.get(`/admin/surveys/${id}/responses`);
   return response.data.data;
+}
+
+export async function clearAllResponses() {
+  const response = await client.delete('/admin/responses/clear-all');
+  return response.data;
 }

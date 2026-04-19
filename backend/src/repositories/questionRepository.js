@@ -77,6 +77,28 @@ function getMaxOrderIndex(surveyId) {
   return row.max_idx ?? -1;
 }
 
+function rebalanceOrder(surveyId) {
+  const qs = db.prepare('SELECT id FROM questions WHERE survey_id = ? ORDER BY order_index ASC').all(surveyId);
+  const reorder = db.transaction(() => {
+    qs.forEach((q, idx) => {
+      db.prepare('UPDATE questions SET order_index = ? WHERE id = ?').run(idx, q.id);
+    });
+  });
+  reorder();
+}
+
+function reorderQuestion(surveyId, questionId, newIndex) {
+  const all = db.prepare('SELECT id FROM questions WHERE survey_id = ? ORDER BY order_index ASC').all(surveyId);
+  const filtered = all.filter(q => q.id !== questionId);
+  filtered.splice(newIndex, 0, { id: questionId });
+  const reorder = db.transaction(() => {
+    filtered.forEach((q, idx) => {
+      db.prepare('UPDATE questions SET order_index = ? WHERE id = ?').run(idx, q.id);
+    });
+  });
+  reorder();
+}
+
 module.exports = {
   findBySurveyId,
   findById,
@@ -86,4 +108,6 @@ module.exports = {
   remove,
   removeBySurveyId,
   getMaxOrderIndex,
+  rebalanceOrder,
+  reorderQuestion,
 };
