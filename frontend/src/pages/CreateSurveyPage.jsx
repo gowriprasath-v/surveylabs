@@ -64,8 +64,8 @@ export default function CreateSurveyPage() {
     }
   }, [title, description, mode, questions]);
 
-  const previewSrc = `/preview/draft?device=mobile`;
-  const desktopPreviewSrc = `/preview/draft?device=desktop`;
+  const previewSrc = `/s/draft?preview=true&device=mobile`;
+  const desktopPreviewSrc = `/s/draft?preview=true&device=desktop`;
 
   const handleSave = async () => {
     setError('');

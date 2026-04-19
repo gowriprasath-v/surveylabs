@@ -26,6 +26,15 @@ export default function PublicSurveyPage() {
       try {
         setLoading(true);
         setGlobalError('');
+
+        if (id === 'draft') {
+          // Initialize empty state for live builder preview, wait for postMessage
+          setSurvey({ title: 'Draft Survey', description: '', mode: 'standard' });
+          setQuestions([]);
+          setLoading(false);
+          return;
+        }
+
         const data = await getPublicSurvey(id);
 
         if (data.survey.mode === 'conversational' && !location.pathname.endsWith('/convo')) {

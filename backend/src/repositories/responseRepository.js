@@ -49,4 +49,10 @@ function findAllBySurveyId(surveyId) {
   return db.prepare('SELECT * FROM responses WHERE survey_id = ? ORDER BY submitted_at DESC').all(surveyId);
 }
 
-module.exports = { create, countBySurveyId, countLastHour, countPrevHour, countLast24h, getLastResponseTime, getRecentTextAnswers, findAllBySurveyId };
+function hasIpResponded(surveyId, ip) {
+  if (!ip || ip === 'unknown') return false;
+  const row = db.prepare('SELECT 1 FROM responses WHERE survey_id = ? AND respondent_ip = ? LIMIT 1').get(surveyId, ip);
+  return !!row;
+}
+
+module.exports = { create, countBySurveyId, countLastHour, countPrevHour, countLast24h, getLastResponseTime, getRecentTextAnswers, findAllBySurveyId, hasIpResponded };

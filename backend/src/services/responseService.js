@@ -114,8 +114,11 @@ function submitResponse(surveyId, answersPayload, ip, completionTimeMs) {
     }
   }
 
+  // Note: duplicate IP detection
+  const isDuplicateIp = responseRepository.hasIpResponded(surveyId, ip);
+
   // Score quality
-  const qualityResult = scoreResponse(answersPayload, completionTimeMs, questions);
+  const qualityResult = scoreResponse(answersPayload, completionTimeMs, questions, isDuplicateIp);
 
   const responseId = uuidv4();
 

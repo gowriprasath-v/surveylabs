@@ -1,4 +1,4 @@
-function scoreResponse(answers, completionTimeMs, questions) {
+function scoreResponse(answers, completionTimeMs, questions, isDuplicateIp = false) {
   const flags = [];
   let score = 100;
 
@@ -10,6 +10,11 @@ function scoreResponse(answers, completionTimeMs, questions) {
       flags.push({ type: 'too_fast', severity: 'high', detail: `Completed in ${(completionTimeMs / 1000).toFixed(1)}s` });
       score -= completionTimeMs < minExpectedMs * 0.5 ? 45 : 25;
     }
+  }
+
+  if (isDuplicateIp) {
+    flags.push({ type: 'duplicate_ip', severity: 'high', detail: 'Multiple responses from same IP' });
+    score -= 40;
   }
 
   const questionMap = {};

@@ -62,9 +62,10 @@ export default function ResultsPage() {
   const [selectedResponseId, setSelectedResponseId] = useState(null);
 
   useEffect(() => {
-    (async () => {
+    let timer;
+    const fetchData = async (isPoll = false) => {
       try {
-        setLoading(true);
+        if (!isPoll) setLoading(true);
         const [results, indiv] = await Promise.all([
           getResults(id),
           getIndividualResponses(id),
@@ -115,11 +116,15 @@ export default function ResultsPage() {
           },
         });
       } catch (err) {
-        toast.error('Failed to load survey results');
+        if (!isPoll) toast.error('Failed to load survey results');
       } finally {
-        setLoading(false);
+        if (!isPoll) setLoading(false);
       }
-    })();
+    };
+
+    fetchData();
+    timer = setInterval(() => fetchData(true), 5000); // 5 sec live polling
+    return () => clearInterval(timer);
   }, [id, toast]);
 
   useEffect(() => {
